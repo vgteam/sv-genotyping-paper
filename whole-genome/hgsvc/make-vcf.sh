@@ -18,7 +18,7 @@ done
 
 # Merge the samples
 echo "Making merged VCF for all samples"
-bcftools merge -0 HGSVC.HG00514.vcf.gz HGSVC.HG005733.vcf.gz HGSVC.NA19240.vcf.gz | sed -e 's/0\/0/0\|0/g' | bgzip > HGSVC.haps.vcf.gz
+bcftools merge -0 HGSVC.HG00514.vcf.gz HGSVC.HG00733.vcf.gz HGSVC.NA19240.vcf.gz | sed -e 's/0\/0/0\|0/g' | bgzip > HGSVC.haps.vcf.gz
 tabix -f -p vcf HGSVC.haps.vcf.gz
 
 
