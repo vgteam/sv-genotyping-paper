@@ -12,7 +12,7 @@ for SAMPLE in HG00514 HG00733 NA19240
 do
 	 # Make diploid VCF out of haploid vcfs:
 	 echo "Making diploid VCF for ${SAMPLE}"
-	 ./hap-merge.py ${SAMPLE}.hap0.vcf.gz ${SAMPLE}.hap1.vcf.gz | vcfuniq | vcfkeepinfo - NA | vcffixup - | bcftools norm - -f hg38.fa.gz | bgzip > HGSVC.${SAMPLE}.vcf.gz
+	 ./hap-merge.py ${SAMPLE}.hap0.vcf.gz ${SAMPLE}.hap1.vcf.gz | vcfuniq | vcfkeepinfo - NA | vcffixup - | bcftools norm - -f hg38.fa.gz | vcfuniq | bgzip > HGSVC.${SAMPLE}.vcf.gz
 	 tabix -f -p vcf HGSVC.${SAMPLE}.vcf.gz
 done
 
