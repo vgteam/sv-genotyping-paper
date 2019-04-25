@@ -19,7 +19,7 @@ export FQBASE=
 
 ## Running
 ```
-# Construct all graphs and indexes.  Haploid vcfs from ../haps/haps.urls must have been downloaded into ../haps
+# Construct all graphs and indexes.
 ./construct.sh -c ${CLUSTER}1 ${JOBSTORE}1 ${OUTSTORE}
 
 # Simulate a GAM and fastq from the two HG00514 haplotypes
@@ -31,7 +31,7 @@ export FQBASE=
 # Simulation
 ./mce.sh -c ${CLUSTER}1  ${JOBSTORE}1 ${OUTSTORE}/HGSVC s3://${OUTSTORE}/HGSVC/HGSVC HG00514 HG00514-sim s3://${OUTSTORE}/HGSVC/HGSVC.haps.vcf.gz ${COMPARE_REGIONS_BED} s3://${OUTSTORE}/HGSVC-chroms-dec5/sim/sim-HG00514-30x.fq.gz
 
-# Three HGSVC Samples
+# Three HGSVC Samples (the reads can be found publicly by looking up the run names on EBI's ENA.  I had them mirrored in FQBASE for faster access)
 ./mce.sh -c ${CLUSTER}1  ${JOBSTORE}1 ${OUTSTORE}/HGSVC s3://${OUTSTORE}/HGSVC/HGSVC HG00514 HG00514 s3://${OUTSTORE}/HGSVC/HGSVC.haps.vcf.gz ${COMPARE_REGIONS_BED} ${FQBASE}/HG00514/ERR903030_1.fastq.gz ${FQBASE}/HG00514/ERR903030_2.fastq.gz 
 
 ./mce.sh -c ${CLUSTER}2  ${JOBSTORE}2 ${OUTSTORE}/HGSVC s3://${OUTSTORE}/HGSVC/HGSVC HG00733 HG00733 s3://${OUTSTORE}/HGSVC/HGSVC.haps.vcf.gz ${COMPARE_REGIONS_BED} ${FQBASE}/HG00733/ERR895347_1.fastq.gz ${FQBASE}/HG00733/ERR895347_2.fastq.gz 

@@ -219,14 +219,14 @@ fi
 
 if [ $NODECOY == 0 ]
 then
-	 REGION_REGEX="--regions_regex \"chr.*_random\" \"chrUn_[a-zA-Z0-9]*\" \"chr.*decoy\""
+	 REGION_REGEX="--regions_regex \"chr.*_random\" \"chrUn_[a-zA-Z0-9]*\" \"chr.*decoy\" \"chrEBV\""
 else
 	 REGION_REGEX="--regions_regex \"chr.*_random\" \"chrUn_[a-zA-Z0-9]*\""
 fi
 
 if [ $HG38 == 1 ]
 then
-	 REGIONS="--regions $(for i in $(seq 1 22; echo X; echo Y; echo M; echo EBV); do echo chr${i}; done) --fasta_regions ${ALT_REGIONS} ${REGION_REGEX} --add_chr_prefix --mask_ambiguous"
+	 REGIONS="--regions $(for i in $(seq 1 22; echo X; echo Y; echo M); do echo chr${i}; done) --fasta_regions ${ALT_REGIONS} ${REGION_REGEX} --add_chr_prefix --mask_ambiguous"
 	 FASTA="ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/technical/reference/GRCh38_reference_genome/GRCh38_full_analysis_set_plus_decoy_hla.fa"
 else
 	 REGIONS="--regions $(for i in $(seq 1 22; echo X; echo Y; echo MT); do echo ${i}; done) --fasta_regions --remove_chr_prefix --mask_ambiguous"
