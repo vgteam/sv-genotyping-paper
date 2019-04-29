@@ -1,3 +1,9 @@
+# Pseudo-diploid CHM genome
+
+# toil-vg
+
+Using the helper scripts from `../toil-scripts`.
+
 ```
 # make the CHM-PSEUDODIPLOID graph
 ./construct-hgsvc.sh -s -c ${CLUSTER}2 ${JOBSTORE}2 ${OUTSTORE}/CHMPD-feb12
@@ -18,8 +24,6 @@ aws s3 sync s3://${OUTSTORE}/CHMPD-feb12/eval-PSEUDOSET-30 ./CHMPD-feb12-eval-PS
 
 aws s3 sync s3://${OUTSTORE}/CHMPD-feb12/eval-PSEUDOSET-30-smrtsv ./CHMPD-feb12-eval-PSEUDOSET-smrtsv
 
-
-
 ### move to manuscript sv
 pushd CHMPD-feb12-eval-PSEUDOSET-smrtsv
 for i in sveval* ; do cd $i; tar zxf sv_evaluation.tar.gz; cd ..; done
@@ -37,3 +41,5 @@ cp sveval-clip-norm-gt/sv_evaluation/prcurve.tsv ~/Documents/Research/manu-vgsv/
 cp sveval-norm-gt/sv_evaluation/prcurve.tsv ~/Documents/Research/manu-vgsv/figures/data/chmpd-construct-prcurve-geno.tsv
 popd
 ```
+
+# SMRTSV2

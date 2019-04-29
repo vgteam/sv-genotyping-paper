@@ -1,3 +1,10 @@
+# GIAB
+
+## toil-vg
+
+Using the helper scripts from `../toil-scripts`.
+
+```
 # this is inspired by the analysis from https://www.biorxiv.org/content/biorxiv/early/2019/02/24/558247.full.pdf
 # they used
 ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/AshkenazimTrio/analysis/NIST_UnionSVs_12122017/
@@ -19,4 +26,8 @@ ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/AshkenazimTrio/analysis/NIST_SVs_
 
 aws s3 sync s3://${OUTSTORE}/GIAB-FEB26/eval-HG002 ./GIAB-FEB26-eval-HG002
 aws s3 sync s3://${OUTSTORE}/GIAB-0.5-FEB26/eval-HG002 ./GIAB-0.5-FEB26-eval-HG002
+```
 
+## Delly, SVTyper, BayesTyper
+
+For the commands for other methods (Delly, SVTyper, BayesTyper) see in their dedicated folder

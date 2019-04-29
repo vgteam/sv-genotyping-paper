@@ -1,7 +1,20 @@
-### HGSVG Whole Genome Experiment
+# HGSVC
 
-## Setup
+##  Commands used to download the data
+
+```
+for name in HG00514 HG00733 NA19240 HG00514-sim
+do
+aws s3 sync s3://${OUTSTORE}/HGSVC/eval-${name} ./HGSVC-jan5-eval-${name}
+done
+```
+
+## toil-vg
+
+### Setup
+
 The following environment variables need to be set
+
 ```
 # jobstore prefix: EX my-jobstore
 export JOBSTORE=
@@ -17,7 +30,10 @@ export TEMPLATE_FQ=
 export FQBASE=
 ```
 
-## Running
+### Running
+
+Using the helper scripts from `../toil-scripts`.
+
 ```
 # Construct all graphs and indexes.
 ./construct.sh -c ${CLUSTER}1 ${JOBSTORE}1 ${OUTSTORE}
@@ -39,13 +55,6 @@ export FQBASE=
 ./mce.sh -c ${CLUSTER}3  ${JOBSTORE}3 ${OUTSTORE}/HGSVC s3://${OUTSTORE}/HGSVC/HGSVC NA19240 NA19240 s3://${OUTSTORE}/HGSVC/HGSVC.haps.vcf.gz ${COMPARE_REGIONS_BED} ${FQBASE}/NA19240/ERR894724_1.fastq.gz ${FQBASE}/NA19240/ERR894724_2.fastq.gz 
 ```
 
-#commands used to download the data
+## Delly, SVTyper, BayesTyper
 
-```
-for name in HG00514 HG00733 NA19240 HG00514-sim
-do
-aws s3 sync s3://${OUTSTORE}/HGSVC/eval-${name} ./HGSVC-jan5-eval-${name}
-done
-```
-
-
+For the commands for other methods (Delly, SVTyper, BayesTyper) see in their dedicated folder.

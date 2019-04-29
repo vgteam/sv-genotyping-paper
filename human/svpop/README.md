@@ -1,5 +1,9 @@
 # SVPOP
 
+## toil-vg
+
+Using the helper scripts from `../toil-scripts`.
+
 ```
 # Construct the graph and index for svpop (15 sv samples) including inversions
 ./construct-hgsvc.sh -p -i -c ${CLUSTER}2 ${JOBSTORE}2 ${OUTSTORE}/SVPOP-jan10
@@ -17,9 +21,11 @@
 rm -rf ./SVPOP-jan10-eval-HG00514 ; aws s3 sync s3://${OUTSTORE}/SVPOP-jan10/eval-HG00514 ./SVPOP-jan10-eval-HG00514
 rm -rf ./SVPOP-jan10-eval-HG00733 ; aws s3 sync s3://${OUTSTORE}/SVPOP-jan10/eval-HG00733 ./SVPOP-jan10-eval-HG00733
 rm -rf ./SVPOP-jan10-eval-NA19240 ; aws s3 sync s3://${OUTSTORE}/SVPOP-jan10/eval-NA19240 ./SVPOP-jan10-eval-NA19240
+```
 
-#### SMRTSV
+## SMRTSV2
 
+```
 # Smrtsv2 was run on courtyard, then made explicity using the same process as the original svpop graph (see construg-hgsvc.sh)
 # (all three samples are in one VCF: svpop-smrtsv-hgsvc-explicit.vcf.gz)
 
@@ -32,3 +38,4 @@ rm -rf ./SVPOP-jan10-eval-NA19240 ; aws s3 sync s3://${OUTSTORE}/SVPOP-jan10/eva
 rm -rf ./SVPOP-jan10-eval-HG00514-smrtsv ; aws s3 sync s3://${OUTSTORE}/SVPOP-jan10/eval-HG00514-smrtsv ./SVPOP-jan10-eval-HG00514-smrtsv
 rm -rf ./SVPOP-jan10-eval-HG00733-smrtsv ; aws s3 sync s3://${OUTSTORE}/SVPOP-jan10/eval-HG00733-smrtsv ./SVPOP-jan10-eval-HG00733-smrtsv
 rm -rf ./SVPOP-jan10-eval-NA19240-smrtsv ; aws s3 sync s3://${OUTSTORE}/SVPOP-jan10/eval-NA19240-smrtsv ./SVPOP-jan10-eval-NA19240-smrtsv
+```
