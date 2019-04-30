@@ -1,5 +1,10 @@
+These scripts are used to automate the analysis of each dataset on AWS.
+The commands for each dataset are located in their dedicated folder (e.g. `../hgsvc`).
+
 ## Setup
+
 The following environment variables need to be set
+
 ```
 # jobstore prefix: EX my-jobstore
 export JOBSTORE=
@@ -15,7 +20,11 @@ export TEMPLATE_FQ=
 export FQ1=
 # input reads 2
 export FQ2=
-
 ```
 
+## Scripts
 
+- `construct.sh` constructs a graph from a VCF.
+- `simulate.sh` simulates 30X coverage from the graph.
+- `mce.sh` maps reads to a graph.
+- `call.sh` call SVs on a graph.
