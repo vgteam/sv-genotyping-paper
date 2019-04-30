@@ -1,0 +1,285 @@
+# Yeast samples
+# SRR4074413  S.p.    UWOPS91-917.1
+# SRR4074412  S.p.    UFRJ50816
+# SRR4074411  S.p.    YPS138
+# SRR4074394  S.p.    N44
+# SRR4074385  S.p.    CBS432
+# SRR4074384  S.c.    UWOPS03-461.4
+# SRR4074383  S.c.    YPS128
+# SRR4074358  S.c.    Y12
+# SRR4074258  S.c.    SK1
+# SRR4074257  S.c.    DBVPG6765
+# SRR4074256  S.c.    DBVPG6044
+# SRR4074255  S.c.    S288c
+
+
+SAMPLES_ALL=["UWOPS919171", "UFRJ50816", "YPS138", "N44", "CBS432", "UWOPS034614", "YPS128", "Y12", "SK1", "DBVPG6765", "DBVPG6044", "S288C"]
+SAMPLES_ALL_BUT_S288C=["UWOPS919171", "UFRJ50816", "YPS138", "N44", "CBS432", "UWOPS034614", "YPS128", "Y12", "SK1", "DBVPG6765", "DBVPG6044"]
+SAMPLES_FOUR=["UFRJ50816", "YPS128", "CBS432", "SK1"]
+
+rule all:
+    input:
+        expand("SV/unions/union.{sample}.vcf", sample=SAMPLES_ALL_BUT_S288C),
+        expand("SV/unions/merged/union.{subset}.vcf", subset=["all", "four"])
+
+
+###########
+#ALIGNMENT#
+###########
+
+#LAST
+rule build_lastdb:
+    input:
+        "assemblies_raw/S288C.genome.fa"
+    output:
+        "lastdb/S288C.prj"
+    shell:
+        "lastdb -R01 lastdb/S288C {input}"
+
+
+rule run_last:
+    input:
+        assembly="assemblies_raw/{sample}.genome.fa",
+        lastdb="lastdb/S288C.prj"
+    output:
+        "lastal_output/{sample}.maf.gz"
+    shell:
+        "lastal -e25 -v -q3 -j4 lastdb/S288C {input.assembly} | last-split -s35 -v | gzip > {output}"
+
+
+#minimap2
+rule run_minimap2:
+    input:
+        query="assemblies_raw/{sample}.genome.fa",
+        target="assemblies_raw/S288C.genome.fa"
+    output:
+        "minimap2_output/{sample}.S288C.{asm}.paf"
+    shell:
+        "minimap2 -cx {wildcards.asm} --cs {input.target} {input.query} > {output}"
+
+
+#Nucmer
+rule run_nucmer:
+    input:
+        assembly="assemblies_raw/{sample}.genome.fa",
+        reference="assemblies_raw/S288C.genome.fa"
+    output:
+        "nucmer_output/{sample}.delta"
+    shell:
+        "nucmer --maxmatch --minmatch 15 --maxgap 500 --mincluster 200 --diagdiff 20 {input.reference} {input.assembly} -prefix nucmer_output/{wildcards.sample}"
+
+
+#########
+#CALLING#
+#########
+
+#Paftools
+rule run_paftools_call:
+    input:
+        paf="minimap2_output/{sample}.S288C.{asm}.paf",
+        ref="assemblies_raw/S288C.genome.fa"
+    output:
+        "paftools_output/{sample}.{asm}.vcf"
+    shell:
+        "sort -k6,6 -k8,8n {input.paf} | paftools.js call -L 10000 -f {input.ref} - > {output}"
+
+
+def get_input(wildcards):
+    if wildcards.sample in ["UWOPS919171", "UFRJ50816", "YPS138", "N44", "CBS432"]:
+        return ["paftools_output/{0}.asm20.vcf".format(wildcards.sample)]
+    elif wildcards.sample in ["UWOPS034614", "YPS128", "Y12", "SK1", "DBVPG6765", "DBVPG6044"]:
+        return ["paftools_output/{0}.asm5.vcf".format(wildcards.sample)]
+    else:
+        print(wildcards.sample)
+        return False
+
+
+rule convert_paftools_vcf_to_bed:
+    input:
+        get_input
+    output:
+        dels="SV/paftools.{sample}.del.bed",
+        ins="SV/paftools.{sample}.ins.bed"
+    shell:
+        """
+        set +e
+        grep -ve \"^#\" {input} | awk 'OFS=\"\\t\" {{ if (length($4)-length($5)>19 && length($5) < 5) {{ print $1, $2, $2+(length($4)-1), $3, $6, \"Deletion\", $4, $8, \"{wildcards.sample}\" }} }}' > {output.dels}
+        grep -ve \"^#\" {input} | awk 'OFS=\"\\t\" {{ if (length($5)-length($4)>19 && length($4) < 5) {{ print $1, $2, $2+(length($5)-1), $3, $6, \"Insertion\", $5, $8, \"{wildcards.sample}\" }} }}' > {output.ins}
+        exitcode=$?
+        if [ $exitcode -gt 1 ]
+        then
+            exit 1
+        else
+            exit 0
+        fi
+        """
+
+#Asmvar
+rule run_asmvar:
+    input:
+        maf="lastal_output/{sample}.maf.gz",
+        query="assemblies_raw/{sample}.genome.fa",
+        target="assemblies_raw/S288C.genome.fa",
+    output:
+        vcf="asmvar_output/{sample}.{chrom}.vcf",
+        age="asmvar_output/{sample}.{chrom}.age",
+        log="asmvar_output/{sample}.{chrom}.AsmVarDetection.log"
+    wildcard_constraints:
+        chrom="chr[IVXL]+"
+    params:
+        prefix="asmvar_output/{sample}.{chrom}"
+    shell:
+        "ASV_VariantDetector -s {wildcards.sample} -r {wildcards.chrom} -i {input.maf} -t {input.target} -q {input.query} -o {params.prefix} > {output.age} 2> {output.log}"
+
+
+rule cat_asmvar:
+    input:
+        expand("asmvar_output/{sample}.{chrom}.vcf", chrom=["chrI", "chrII", "chrIII", "chrIV", "chrV", "chrVI", "chrVII", "chrVIII", "chrIX", "chrX", "chrXI", "chrXII", "chrXIII", "chrXIV", "chrXV", "chrXVI"], sample=["{sample}"])
+    output:
+        "asmvar_output/{sample}.allchr.vcf"
+    shell:
+        "cat {input} | grep -v \"#\" | cat <(grep -e \"^#\" {input[0]}) - > {output}"
+
+
+rule convert_asmvar_vcf_to_bed:
+    input:
+        "asmvar_output/{sample}.allchr.vcf"
+    output:
+        dels="SV/asmvar.{sample}.del.bed",
+        ins="SV/asmvar.{sample}.ins.bed"
+    shell:
+        """
+        set +e
+        grep -ve \"^#\" {input} | awk 'OFS=\"\\t\" {{ if ($7 == \".\" || $7 == \"AGEFALSE\") {{ if (length($4)-length($5)>19 && length($5) < 5) {{ print $1, $2, $2+(length($4)-1), $3, $6, \"Deletion\", $4, $8, \"{wildcards.sample}\" }} }} }}' > {output.dels}
+        grep -ve \"^#\" {input} | awk 'OFS=\"\\t\" {{ if ($7 == \".\" || $7 == \"AGEFALSE\") {{ if (length($5)-length($4)>19 && length($4) < 5) {{ print $1, $2, $2+(length($5)-1), $3, $6, \"Insertion\", $5, $8, \"{wildcards.sample}\" }} }} }}' > {output.ins}
+        exitcode=$?
+        if [ $exitcode -gt 1 ]
+        then
+            exit 1
+        else
+            exit 0
+        fi
+        """
+
+
+#Assemblytics
+rule run_assemblytics:
+    input:
+        "nucmer_output/{sample}.delta"
+    output:
+        "assemblytics_output/{sample}.Assemblytics_structural_variants.bed"
+    shell:
+        "Assemblytics {input} assemblytics_output/{wildcards.sample} 5000 ~/bin/Assemblytics/"
+
+
+rule convert_assemblytics_bed_to_bed:
+    input:
+        "assemblytics_output/{sample}.Assemblytics_structural_variants.bed"
+    output:
+        "assemblytics_output/{sample}.coords.bed"
+    shell:
+        "awk 'OFS=\"\\t\" {{ if ($7 == \"Insertion\" && $8 > -5 && $8 < 5 && $9 > 19) {{ print $1, $2, $2+$9, $4, \".\", $7, $10, \".\", \"{wildcards.sample}\" }} else if ($7 == \"Deletion\" && $9 >= 0 && $9 < 5 && $8 > 19) {{ print $1, $2, $2+$8, $4, \".\", $7, $1\":\"$2\"-\"$3, \".\", \"{wildcards.sample}\" }} }}' {input} | sort -k1,1 -k2,2n -k3,3n -k6,6 -k7,7 -u > {output}"
+
+
+rule replace_assemblytics_insertion_sequences:
+    input:
+        bed="assemblytics_output/{sample}.coords.bed",
+        reference="assemblies_raw/S288C.genome.fa",
+        query="assemblies_raw/{sample}.genome.fa"
+    output:
+        "assemblytics_output/{sample}.final.bed"
+    shell:
+        "python3 replace_regions_with_nucleotides.py {input.bed} {input.reference} {input.query} {wildcards.sample} > {output}"
+
+
+rule separate_del_ins:
+    input:
+        "assemblytics_output/{sample}.final.bed"
+    output:
+        dels="SV/assemblytics.{sample}.del.bed",
+        ins="SV/assemblytics.{sample}.ins.bed"
+    run:
+        shell("grep Deletion {input} > {output.dels}")
+        shell("grep Insertion {input} > {output.ins}")
+
+
+################
+#MERGE CALLSETS#
+################
+
+#Create high-sensitivity set (union of all three callsets)
+rule union:
+    input:
+        assemblytics="SV/assemblytics.{sample}.{type}.bed",
+        asmvar="SV/asmvar.{sample}.{type}.bed",
+        paftools="SV/paftools.{sample}.{type}.bed"
+    output:
+        "SV/unions/union.{sample}.{type}.bed"
+    shell:
+        "cat {input.paftools} <(bedtools intersect -a {input.asmvar} -b {input.paftools} -v -r -f 0.5) <(bedtools intersect -a {input.assemblytics} -b {input.asmvar} {input.paftools} -v -r -f 0.5) > {output}"
+
+
+###############
+#MERGE STRAINS#
+###############
+
+rule merge_strains_all:
+    input:
+        calls=expand("SV/{subdir}/{prefix}.{sample}.{type}.bed", sample=SAMPLES_ALL_BUT_S288C, type=["{type}"], subdir=["{subdir}"], prefix=["{prefix}"])
+    output:
+        "SV/{subdir}/merged/{prefix}.all.{type}.bed"
+    run:
+        command = "cat {input.calls[0]}"
+        already_added = "{input.calls[0]}"
+        for index in range(1, len(input.calls)):
+            command += " <(bedtools intersect -a {{input.calls[{0}]}} -b {1} -v -r -f 0.9)".format(index, already_added)
+            already_added += " {{input.calls[{0}]}}".format(index)
+        print(command)
+        shell(command + " | sort -k1,1V -k2,2n -k3,3n -k6,6 -k7,7 -u > {output}")
+
+
+rule merge_strains_four:
+    input:
+        calls=expand("SV/{subdir}/{prefix}.{sample}.{type}.bed", sample=SAMPLES_FOUR, type=["{type}"], subdir=["{subdir}"], prefix=["{prefix}"])
+    output:
+        "SV/{subdir}/merged/{prefix}.four.{type}.bed"
+    run:
+        command = "cat {input.calls[0]}"
+        already_added = "{input.calls[0]}"
+        for index in range(1, len(input.calls)):
+            command += " <(bedtools intersect -a {{input.calls[{0}]}} -b {1} -v -r -f 0.9)".format(index, already_added)
+            already_added += " {{input.calls[{0}]}}".format(index)
+        print(command)
+        shell(command + " | sort -k1,1V -k2,2n -k3,3n -k6,6 -k7,7 -u > {output}")
+
+############
+#CONVERSION#
+############
+
+rule convert_bed_to_vcf:
+    input:
+        dels="{name}.del.bed",
+        ins="{name}.ins.bed"
+    output:
+        "{name}.vcf"
+    shell:
+        "cat <(awk 'OFS=\"\\t\" {{ print $1, $2, $4, $7, substr($7,1,1), $5, \"PASS\", \"SVTYPE=DEL;\"$8, \"GT\", \"1/1\" }}' {input.dels}) <(awk 'OFS=\"\\t\" {{ print $1, $2, $4, substr($7,1,1), $7, $5, \"PASS\", \"SVTYPE=INS;\"$8, \"GT\", \"1/1\" }}' {input.ins}) | sort -k1,1V -k2,2n -u | cat vcf_header_gt.vcf - > {output}"
+
+
+rule compress:
+    input:
+        "{file}.vcf"
+    output:
+        "{file}.vcf.gz"
+    shell:
+        "bgzip -c {input} > {output}"
+
+
+rule tabix:
+    input:
+        "{file}.vcf.gz"
+    output:
+        "{file}.vcf.gz.tbi"
+    shell:
+        "tabix -p vcf {input}"
+

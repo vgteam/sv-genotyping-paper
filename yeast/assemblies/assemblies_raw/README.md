@@ -1,0 +1,1 @@
+The assemblies in this directory are part of the Yeast Population Reference Panel (YPRP) that can be downloaded here: https://yjx1217.github.io/Yeast_PacBio_2016/data/

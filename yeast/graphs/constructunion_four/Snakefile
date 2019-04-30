@@ -1,0 +1,112 @@
+# SRR4074413  S.p.    UWOPS91-917.1
+# SRR4074412  S.p.    UFRJ50816
+# SRR4074411  S.p.    YPS138
+# SRR4074394  S.p.    N44
+# SRR4074385  S.p.    CBS432
+# SRR4074384  S.c.    UWOPS03-461.4
+# SRR4074383  S.c.    YPS128
+# SRR4074358  S.c.    Y12
+# SRR4074258  S.c.    SK1
+# SRR4074257  S.c.    DBVPG6765
+# SRR4074256  S.c.    DBVPG6044
+# SRR4074255  S.c.    S288c
+
+SAMPLES=["SRR4074413", "SRR4074412", "SRR4074411", "SRR4074394", "SRR4074385", "SRR4074384", "SRR4074383", "SRR4074358", "SRR4074258", "SRR4074257", "SRR4074256", "SRR4074255"]
+
+rule all:
+    input:
+        expand("mappings/{sample}.mapped.sorted.gam", sample=SAMPLES),
+        "mappings/stats/all.tsv"
+
+
+rule construct_graph:
+    input:
+        fasta="../../assemblies/assemblies_raw/S288C.genome.fa",
+        vcf="../../assemblies/SV/unions/merged/union.four.vcf"
+    output:
+        vg="construct.vg"
+    shell:
+        "vg construct -r {input.fasta} -v {input.vcf} -S -a -f -p > {output}"
+
+
+rule split_nodes:
+    input:
+        "construct.vg"
+    output:
+        "construct.chop32.vg"
+    shell:
+        "vg mod -X 32 {input} > {output}"
+
+
+rule index_gcsa:
+    input:
+        "construct.chop32.vg"
+    output:
+        "construct.gcsa"
+    shell:
+        "vg index -g {output} -k 11 -p -b temp {input}"
+
+
+rule index_xg:
+    input:
+        "construct.chop32.vg"
+    output:
+        "construct.xg"
+    shell:
+        "vg index -x {output} {input}"
+
+
+rule map_reads:
+    input:
+        xg="construct.xg",
+        gcsa="construct.gcsa",
+        reads="../../illumina_reads/{sample}.fastq.gz"
+    output:
+        "mappings/{sample}.mapped.gam"
+    threads: 10
+    shell:
+        "vg map -t {threads} -x {input.xg} -g {input.gcsa} -f {input.reads} > mappings/{wildcards.sample}.mapped.gam"
+
+
+rule count_mapped_reads:
+    input:
+        "mappings/{sample}.mapped.gam"
+    output:
+        "mappings/stats/{sample}.tsv"
+    run:
+        shell("vg view -a {input} | jq -rc '[.name, if .mapping_quality == null then 0 else .mapping_quality end ] | @tsv' | awk '$2>0' | wc -l > {output}")
+        shell("vg view -a {input} | jq -rc '[.name, if .mapping_quality == null then 0 else .mapping_quality end ] | @tsv' | awk '$2>=10' | wc -l >> {output}")
+        shell("vg view -a {input} | jq -rc '[.name, if .mapping_quality == null then 0 else .mapping_quality end ] | @tsv' | awk '$2>=20' | wc -l >> {output}")
+        shell("vg view -a {input} | jq -rc '[.name, if .mapping_quality == null then 0 else .mapping_quality end ] | @tsv' | awk '$2>=30' | wc -l >> {output}")
+        shell("vg view -a {input} | jq -rc '[.name, if .mapping_quality == null then 0 else .mapping_quality end ] | @tsv' | awk '$2>=40' | wc -l >> {output}")
+        shell("vg view -a {input} | jq -rc '[.name, if .mapping_quality == null then 0 else .mapping_quality end ] | @tsv' | awk '$2>=50' | wc -l >> {output}")
+        shell("vg view -a {input} | jq -rc '[.name, if .mapping_quality == null then 0 else .mapping_quality end ] | @tsv' | awk '$2>=60' | wc -l >> {output}")
+        shell("vg view -a {input} | jq -rc '[.name, if .identity == null then 0 else .identity end ] | @tsv' | awk '$2>=1' | wc -l >> {output}")
+        shell("vg view -a {input} | jq -rc '[.name, if .identity == null then 0 else .identity end ] | @tsv' | awk '$2>=0.9' | wc -l >> {output}")
+        shell("vg view -a {input} | jq -rc '[.name, if .identity == null then 0 else .identity end ] | @tsv' | awk '$2>=0.5' | wc -l >> {output}")
+        shell("vg view -a {input} | wc -l >> {output}")
+
+
+rule cat_counts:
+    input:
+        stats=expand("mappings/stats/{sample}.tsv", sample=SAMPLES),
+        samples="../../illumina_reads/samples.txt"
+    output:
+        "mappings/stats/all.tsv"
+    run:
+        for f in input.stats:
+            sample = f.split("/")[2].split(".")[0]
+            shell("cat {f} | tr '\\n' '\\t' >> {output}")
+            shell("echo -e -n \"construct\\t\" >> {output}")
+            shell("grep {sample} {input.samples} | awk '{{ print $3}}' >> {output}")
+
+
+rule sort_gam:
+    input:
+        "mappings/{sample}.mapped.gam"
+    output:
+        sorted="mappings/{sample}.mapped.sorted.gam",
+        gai="mappings/{sample}.mapped.sorted.gam.gai"
+    threads: 10
+    shell:
+        "vg gamsort -t {threads} -i {output.gai} {input} > {output.sorted}"

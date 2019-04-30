@@ -1,0 +1,6 @@
+((UFRJ50816:0.01910,CBS432:0.01910):0.03250,((YPS128:0.00275,S288C:0.00275):0.00052,SK1:0.00328):0.04832);
+CBS432 CBS432.genome.fa.masked
+S288C S288C.genome.fa.masked
+SK1 SK1.genome.fa.masked
+UFRJ50816 UFRJ50816.genome.fa.masked
+YPS128 YPS128.genome.fa.masked

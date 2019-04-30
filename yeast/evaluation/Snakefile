@@ -1,0 +1,240 @@
+STRAINS_C_ONLY=["DBVPG6765", "Y12", "YPS128", "UWOPS034614", "SK1", "DBVPG6044"]
+STRAINS_ALL=["UWOPS919171", "UFRJ50816", "YPS138", "N44", "CBS432", "UWOPS034614", "YPS128", "Y12", "SK1", "DBVPG6765", "DBVPG6044"]
+
+configfile: "samples.yaml"
+
+
+rule all:
+     input:
+        expand("results/assemblyeval/constructunion.{set}.reads.{metric}.png", set=["all", "four"], metric=["identity", "score", "mapq"])
+
+##############
+# CONVERSION #
+##############
+
+rule tabix:
+    input:
+        "{file}.vcf.gz"
+    output:
+        "{file}.vcf.gz.tbi"
+    shell:
+        "tabix -p vcf {input}"
+
+
+rule fix_chromosomes:
+    input:
+        lambda wildcards: "calls/{0}_{1}/vcf/{2}.{3}.{0}.{1}.vcf.gz".format(wildcards.graph, wildcards.version, config["samples"][wildcards.strainname], wildcards.options)
+    output:
+        "calls/{graph}_{version}/vcf_processed/{strainname}.{options}.vcf.gz"
+    shell:
+        "zcat {input} | sed 's/^S288C.//g' | bgzip -c > {output}"
+
+
+##############
+# EVALUATION #
+##############
+
+rule create_sample_graph_from_calls1:
+    input:
+        calls="calls/{graph}_{version}/vcf_processed/{strain}.{options}.vcf.gz",
+        index="calls/{graph}_{version}/vcf_processed/{strain}.{options}.vcf.gz.tbi",
+        reference="../assemblies/assemblies_raw/S288C.genome.fa"
+    output:
+        "{strain}/assemblyeval/{graph}.{version}.{options}/graph.reconstructed.vg"
+    log:
+        "{strain}/assemblyeval/{graph}.{version}.{options}/graph.reconstruct.log"
+    shell:
+        "vg construct -r {input.reference} -v {input.calls} -S -a -f -p 2> {log} > {output}"
+
+
+rule create_sample_graph_from_calls2:
+    input:
+        calls="calls/{graph}_{version}/vcf_processed/{strain}.{options}.vcf.gz",
+        index="calls/{graph}_{version}/vcf_processed/{strain}.{options}.vcf.gz.tbi",
+        graph="{strain}/assemblyeval/{graph}.{version}.{options}/graph.reconstructed.vg"
+    output:
+        "{strain}/assemblyeval/{graph}.{version}.{options}/graph.sample.vg"
+    log:
+        "{strain}/assemblyeval/{graph}.{version}.{options}/graph.sample.log"
+    shell:
+        "vg mod -v {input.calls} {input.graph} 2> {log} > {output}"
+
+
+rule prune_graph:
+    input:
+        "{strain}/assemblyeval/{graph}.{version}.{options}/graph.sample.vg"
+    output:
+        "{strain}/assemblyeval/{graph}.{version}.{options}/graph.sample.pruned.vg"
+    shell:
+        "vg prune {input} > {output}"
+
+rule index_gcsa:
+    input:
+        "{strain}/assemblyeval/{graph}.{version}.{options}/graph.sample.pruned.vg"
+    output:
+        "{strain}/assemblyeval/{graph}.{version}.{options}/graph.sample.gcsa"
+    threads:
+        5
+    log:
+        "{strain}/assemblyeval/{graph}.{version}.{options}/graph.gcsa.log"
+    run:
+        shell("mkdir -p {wildcards.strain}/assemblyeval/{wildcards.graph}.{wildcards.version}.{wildcards.options}/temp")
+        shell("vg index -g {output} -k 11 -t {threads} -p -b {wildcards.strain}/assemblyeval/{wildcards.graph}.{wildcards.version}.{wildcards.options}/temp {input} 2> {log}")
+
+
+rule index_xg:
+    input:
+        "{strain}/assemblyeval/{graph}.{version}.{options}/graph.sample.vg"
+    output:
+        "{strain}/assemblyeval/{graph}.{version}.{options}/graph.sample.xg"
+    shell:
+        "vg index -x {output} {input}"
+
+
+def get_reads(wildcards):
+    if wildcards.strain == "UWOPS919171":
+        return ["../illumina_reads/SRR4074413.fastq.gz"]
+    if wildcards.strain == "UFRJ50816":
+        return ["../illumina_reads/SRR4074412.fastq.gz"]
+    if wildcards.strain == "YPS138":
+        return ["../illumina_reads/SRR4074411.fastq.gz"]
+    if wildcards.strain == "N44":
+        return ["../illumina_reads/SRR4074394.fastq.gz"]
+    if wildcards.strain == "CBS432":
+        return ["../illumina_reads/SRR4074385.fastq.gz"]
+    if wildcards.strain == "UWOPS034614":
+        return ["../illumina_reads/SRR4074384.fastq.gz"]
+    if wildcards.strain == "YPS128":
+        return ["../illumina_reads/SRR4074383.fastq.gz"]
+    if wildcards.strain == "Y12":
+        return ["../illumina_reads/SRR4074358.fastq.gz"]
+    if wildcards.strain == "SK1":
+        return ["../illumina_reads/SRR4074258.fastq.gz"]
+    if wildcards.strain == "DBVPG6765":
+        return ["../illumina_reads/SRR4074257.fastq.gz"]
+    if wildcards.strain == "DBVPG6044":
+        return ["../illumina_reads/SRR4074256.fastq.gz"]
+    if wildcards.strain == "S288C":
+        return ["../illumina_reads/SRR4074255.fastq.gz"]
+
+
+rule map_reads:
+    input:
+        reads=get_reads,
+        xg="{strain}/assemblyeval/{graph}.{version}.{options}/graph.sample.xg",
+        gcsa="{strain}/assemblyeval/{graph}.{version}.{options}/graph.sample.gcsa"
+    params:
+        graph_base="{strain}/assemblyeval/{graph}.{version}.{options}/graph.sample"
+    output:
+        "{strain}/assemblyeval/{graph}.{version}.{options}/graph.sample.reads.gam"
+    threads: 10
+    log:
+        "{strain}/assemblyeval/{graph}.{version}.{options}/graph.alignreads.log"
+    shell:
+        "vg map -d {params.graph_base} -t {threads} -f {input.reads} 2> {log} > {output}"
+
+
+rule collect_scores:
+    input:
+        "{strain}/assemblyeval/{graph}.{version}.{options}/graph.sample.{aligned}.gam"
+    output:
+        "{strain}/assemblyeval/{graph}.{version}.{options}/graph.sample.{aligned}.scores.txt"
+    shell:
+        "vg view -aj {input} | jq '.score' | sed 's/null/0/' > {output}"
+
+
+rule collect_identities:
+    input:
+        "{strain}/assemblyeval/{graph}.{version}.{options}/graph.sample.{aligned}.gam"
+    output:
+        "{strain}/assemblyeval/{graph}.{version}.{options}/graph.sample.{aligned}.identities.txt"
+    shell:
+        "vg view -aj {input} | jq '.identity' | sed 's/null/0/' > {output}"
+
+
+rule collect_mapping_quality:
+    input:
+        "{strain}/assemblyeval/{graph}.{version}.{options}/graph.sample.{aligned}.gam"
+    output:
+        "{strain}/assemblyeval/{graph}.{version}.{options}/graph.sample.{aligned}.mapqs.txt"
+    shell:
+        "vg view -aj {input} | jq '.mapping_quality' | sed 's/null/0/' > {output}"
+
+
+############
+# Plotting #
+############
+
+rule cat_identities_assembly_eval:
+    input:
+        construct=expand("{strain}/assemblyeval/{{constructgraph}}.{{version}}.norecall/graph.sample.{{aligned}}.identities.txt", strain=STRAINS_ALL),
+        cactus=expand("{strain}/assemblyeval/cactus.{{version}}.recall/graph.sample.{{aligned}}.identities.txt", strain=STRAINS_ALL)
+    output:
+        "results/assemblyeval/{constructgraph}.{version}.{aligned}.identity.tsv"
+    run:
+        shell("rm -f {output}")
+        for file in input.construct:
+            strain = file.split("/")[0]
+            shell("awk 'OFS=\"\\t\" {{ x+=$1 }} END {{ print \"construct\", \"{strain}\", x/NR }}' {file} >> {output}")
+        for file in input.cactus:
+            strain = file.split("/")[0]
+            shell("awk 'OFS=\"\\t\" {{ x+=$1 }} END {{ print \"cactus\", \"{strain}\", x/NR }}' {file} >> {output}")
+
+
+rule cat_scores_assembly_eval:
+    input:
+        construct=expand("{strain}/assemblyeval/{{constructgraph}}.{{version}}.norecall/graph.sample.{{aligned}}.scores.txt", strain=STRAINS_ALL),
+        cactus=expand("{strain}/assemblyeval/cactus.{{version}}.recall/graph.sample.{{aligned}}.scores.txt", strain=STRAINS_ALL)
+    output:
+        "results/assemblyeval/{constructgraph}.{version}.{aligned}.score.tsv"
+    run:
+        shell("rm -f {output}")
+        for file in input.construct:
+            strain = file.split("/")[0]
+            shell("awk 'OFS=\"\\t\" {{ x+=$1 }} END {{ print \"construct\", \"{strain}\", x/NR }}' {file} >> {output}")
+        for file in input.cactus:
+            strain = file.split("/")[0]
+            shell("awk 'OFS=\"\\t\" {{ x+=$1 }} END {{ print \"cactus\", \"{strain}\", x/NR }}' {file} >> {output}")
+
+
+rule cat_mapqs_assembly_eval:
+    input:
+        construct=expand("{strain}/assemblyeval/{{constructgraph}}.{{version}}.norecall/graph.sample.{{aligned}}.mapqs.txt", strain=STRAINS_ALL),
+        cactus=expand("{strain}/assemblyeval/cactus.{{version}}.recall/graph.sample.{{aligned}}.mapqs.txt", strain=STRAINS_ALL)
+    output:
+        "results/assemblyeval/{constructgraph}.{version}.{aligned}.mapq.tsv"
+    run:
+        shell("rm -f {output}")
+        for file in input.construct:
+            strain = file.split("/")[0]
+            shell("awk 'OFS=\"\\t\" {{ x+=$1 }} END {{ print \"construct\", \"{strain}\", x/NR }}' {file} >> {output}")
+        for file in input.cactus:
+            strain = file.split("/")[0]
+            shell("awk 'OFS=\"\\t\" {{ x+=$1 }} END {{ print \"cactus\", \"{strain}\", x/NR }}' {file} >> {output}")
+
+
+rule plot_identity:
+    input:
+        "results/{gold}/{constructgraph}.{version}.{aligned}.identity.tsv"
+    output:
+        "results/{gold}/{constructgraph}.{version}.{aligned}.identity.png"
+    shell:
+        "Rscript scripts/plot_identities.R {input} {output}"
+
+
+rule plot_scores:
+    input:
+        "results/{gold}/{constructgraph}.{version}.{aligned}.score.tsv"
+    output:
+        "results/{gold}/{constructgraph}.{version}.{aligned}.score.png"
+    shell:
+        "Rscript scripts/plot_scores.R {input} {output}"
+
+
+rule plot_mapq:
+    input:
+        "results/{gold}/{constructgraph}.{version}.{aligned}.mapq.tsv"
+    output:
+        "results/{gold}/{constructgraph}.{version}.{aligned}.mapq.png"
+    shell:
+        "Rscript scripts/plot_mapqs.R {input} {output}"

@@ -1,0 +1,8 @@
+##fileformat=VCFv4.1
+##fileDate=none
+##source=custom
+##reference=x.fa
+##filter="SVLEN > 19"
+##INFO=<ID=SVTYPE,Number=A,Type=String,Description="Type of SV">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SAMPLE

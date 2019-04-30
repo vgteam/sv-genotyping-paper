@@ -1,0 +1,36 @@
+SAMPLES=["SRR4074358", "SRR4074413", "SRR4074412", "SRR4074411", "SRR4074394", "SRR4074385", "SRR4074384", "SRR4074383", "SRR4074258", "SRR4074257", "SRR4074256", "SRR4074255"]
+
+wildcard_constraints:
+    sample="SRR[0-9]+"
+
+rule all:
+    input:
+        expand("{sample}.fastq.gz", sample=SAMPLES, end=[1,2])
+
+
+rule download_fastq:
+    output:
+        "{sample}_1.fastq.gz",
+        "{sample}_2.fastq.gz"
+    shell:
+        "fastq-dump --gzip --split-files {wildcards.sample}"
+
+
+#Add _1 or _2 to read names
+rule mark_ends:
+    input:
+        "{sample}_{end}.fastq.gz"
+    output:
+        "{sample}_{end}.marked.fastq.gz"
+    shell:
+        "zcat {input} | sed -E \"s/^([@\\+])({wildcards.sample}.[0-9]+)/\\1\\2_{wildcards.end}/\" | gzip > {output}"
+
+
+rule merge_ends:
+    input:
+        "{sample}_1.marked.fastq.gz",
+        "{sample}_2.marked.fastq.gz"
+    output:
+        "{sample}.fastq.gz"
+    shell:
+        "zcat {input} | gzip > {output}"
