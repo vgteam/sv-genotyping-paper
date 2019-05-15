@@ -3,10 +3,9 @@
 ## Data
 
 - [GRCh38 reference genome](http://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/hg38.fa.gz).
-- Phased VCFs for the three Human Genome Structural Variation Consortium (HGSVC) samples from [Chaisson et al. Nat Comms 2019](https://www.nature.com/articles/s41467-018-08148-z).
+- Phased VCFs for the three Human Genome Structural Variation Consortium (HGSVC) samples from [Chaisson et al. Nat Comms 2019](https://www.nature.com/articles/s41467-018-08148-z) are in this folder (names in *SAMP.hap[01].vcf.gz*).
 
-The merged VCF with SVs from the three samples was created using [make-vcf.sh](make-vcf.sh).
-It creates a `HGSVC.haps.vcf.gz` file.
+The [make-vcf.sh](make-vcf.sh) script creates a combined VCF file `HGSVC.haps.vcf.gz` with SVs from the three samples.
 
 ### Reads
 
@@ -42,26 +41,23 @@ Using the helper scripts from `../toil-scripts`.
 ```
 # Construct all graphs and indexes.
 ./construct.sh -c ${CLUSTER}1 ${JOBSTORE}1 ${OUTSTORE}
-
 # Simulate a GAM and fastq from the two HG00514 haplotypes
 ./simulate.sh -c ${CLUSTER}1 ${JOBSTORE}1 ${OUTSTORE}/sim s3://${OUTSTORE}/HGSVC_HG00514_haplo_thread_0.xg s3://${OUTSTORE}/HGSVC_HG00514_haplo_thread_1.xg ${TEMPLATE_FQ}
-
 ## Mapping, Calling and Evaluation.
 ## Use -M SKIP, -C SKIP, -E SKIP to bypass mapping, calling, evaluation respectively (ex, if rerunning a step)
-
 # Simulation
 ./mce.sh -c ${CLUSTER}1  ${JOBSTORE}1 ${OUTSTORE}/HGSVC s3://${OUTSTORE}/HGSVC/HGSVC HG00514 HG00514-sim s3://${OUTSTORE}/HGSVC/HGSVC.haps.vcf.gz ${COMPARE_REGIONS_BED} s3://${OUTSTORE}/HGSVC-chroms-dec5/sim/sim-HG00514-30x.fq.gz
-
 # Three HGSVC Samples (the reads can be found publicly by looking up the run names on EBI's ENA.  I had them mirrored in FQBASE for faster access)
 ./mce.sh -c ${CLUSTER}1  ${JOBSTORE}1 ${OUTSTORE}/HGSVC s3://${OUTSTORE}/HGSVC/HGSVC HG00514 HG00514 s3://${OUTSTORE}/HGSVC/HGSVC.haps.vcf.gz ${COMPARE_REGIONS_BED} ${FQBASE}/HG00514/ERR903030_1.fastq.gz ${FQBASE}/HG00514/ERR903030_2.fastq.gz 
-
 ./mce.sh -c ${CLUSTER}2  ${JOBSTORE}2 ${OUTSTORE}/HGSVC s3://${OUTSTORE}/HGSVC/HGSVC HG00733 HG00733 s3://${OUTSTORE}/HGSVC/HGSVC.haps.vcf.gz ${COMPARE_REGIONS_BED} ${FQBASE}/HG00733/ERR895347_1.fastq.gz ${FQBASE}/HG00733/ERR895347_2.fastq.gz 
-
-./mce.sh -c ${CLUSTER}3  ${JOBSTORE}3 ${OUTSTORE}/HGSVC s3://${OUTSTORE}/HGSVC/HGSVC NA19240 NA19240 s3://${OUTSTORE}/HGSVC/HGSVC.haps.vcf.gz ${COMPARE_REGIONS_BED} ${FQBASE}/NA19240/ERR894724_1.fastq.gz ${FQBASE}/NA19240/ERR894724_2.fastq.gz 
+./mce.sh -c ${CLUSTER}3  ${JOBSTORE}3 ${OUTSTORE}/HGSVC s3://${OUTSTORE}/HGSVC/HGSVC NA19240 NA19240 s3://${OUTSTORE}/HGSVC/HGSVC.haps.vcf.gz ${COMPARE_REGIONS_BED} ${FQBASE}/NA19240/ERR894724_1.fastq.gz ${FQBASE}/NA19240/ERR894724_2.fastq.gz
 ```
 
 ## Mapping reads to GRCh38
 
+Other methods use reads mapped to the linear reference genome, either for genotyping (Delly, SVTyper) or to identify SNVs/indels (BayesTyper).
+
+Reads were mapped with bwa. 
 For example for NA19240:
 
 ```
@@ -74,18 +70,14 @@ rm ERR894724_bwa_mem_sort_rg.*
 
 ## Delly
 
-For each sample:
+Each sample was genotyped individually.
+For example for NA19240:
 
 ```
-VCF=HGSVC.haps.vcf.gz
-BAM=XXX.bam
-REF=hg38.fa
-SAMP=XXX
-
-delly call -g $REF -v $VCF -o temp.bcf $BAM
-bcftools convert temp.bcf > $SAMP.delly.vcf
-bgzip $SAMP.delly.vcf
-tabix $SAMP.delly.vcf.gz
+delly call -g hg38.fa -v HGSVC.haps.vcf.gz -o temp.bcf ERR894724_bwa_mem_sort_rg_md.bam
+bcftools convert temp.bcf > NA19240.delly.vcf
+bgzip NA19240.delly.vcf
+tabix NA19240.delly.vcf.gz
 ```
 
 ## SVTyper
@@ -97,17 +89,16 @@ See *VCFtoSymbolicDEL.py* in [../misc-scripts](../misc-scripts).
 zcat HGSVC.haps.vcf.gz | python VCFtoSymbolicDEL.py > HGSVC.haps.symbolic.dels.vcf
 ```
 
-Then for each sample:
+Each sample was then genotyped individually.
+The output VCF was converted back to explicit format using a helper scripts from the BayesTyper tools.
+For example for NA19240:
 
 ```
-BAM=XXX.bam
-SAMP=XXX
-
-svtyper -i HGSVC.haps.symbolic.dels.vcf -B $BAM -l libinfo.json > $SAMP.svtyper.vcf
-vcf-sort $SAMP.svtyper.vcf | vcfkeepinfo - END SVLEN SVTYPE NS AN | grep -v 'contig' > $SAMP.svtyper.clean.vcf
-bayesTyperTools convertAllele -v $SAMP.svtyper.clean.vcf -g ../../haps/hg38.fa --keep-imprecise -o $SAMP.svtyper.explicit
-vcfkeepinfo $SAMP.svtyper.explicit.vcf NS AN | bgzip > $SAMP.svtyper.explicit.vcf.gz
-tabix -f $SAMP.svtyper.explicit.vcf.gz
+svtyper -i HGSVC.haps.symbolic.dels.vcf -B ERR894724_bwa_mem_sort_rg_md.bam -l libinfo.json > NA19240.svtyper.vcf
+vcf-sort NA19240.svtyper.vcf | vcfkeepinfo - END SVLEN SVTYPE NS AN | grep -v 'contig' > NA19240.svtyper.clean.vcf
+bayesTyperTools convertAllele -v NA19240.svtyper.clean.vcf -g ../../haps/hg38.fa --keep-imprecise -o NA19240.svtyper.explicit
+vcfkeepinfo NA19240.svtyper.explicit.vcf NS AN | bgzip > NA19240.svtyper.explicit.vcf.gz
+tabix -f NA19240.svtyper.explicit.vcf.gz
 ```
 
 ## BayesTyper

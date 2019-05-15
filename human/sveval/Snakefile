@@ -2,15 +2,15 @@ DEBUG=""
 ## DEBUG="--workDir ./temp/ --cleanWorkDir never"
 
 ## Reference files
-HGSVC_BED="/public/home/hickey/dev/hgsvc/test-compare/hg38_non_repeats.bed"
+HGSVC_BED="hg38_non_repeats.bed"
 REP_BED="hg38_repeats.bed"
-HGSVC_VCF="../glenndata/HGSVC.haps.vcf.gz"
-SVPOP_VCF="../glenndata/sv-pop-explicit.vcf.gz"
-CHMPD_VCF="../glenndata/pseudo_diploid-explicit.vcf.gz"
-REF38="../haps/hg38.fa"
-GIAB_VCF="../glenndata/giab-0.5.vcf.gz"
-GIAB_BED="../glenndata/HG002_SVs_Tier1_v0.6.bed"
-REF37="../glenndata/hs37d5.fa"
+HGSVC_VCF="HGSVC.haps.vcf.gz"
+SVPOP_VCF="sv-pop-explicit.vcf.gz"
+CHMPD_VCF="pseudo_diploid-explicit.vcf.gz"
+REF38="hg38.fa"
+GIAB_VCF="giab-0.5.vcf.gz"
+GIAB_BED="HG002_SVs_Tier1_v0.6.bed"
+REF37="hs37d5.fa"
 
 #### Enumerate all the TSV files for HGSVC
 METHODS  = 'vg delly svtyper bayestyper'.split()

@@ -4,13 +4,21 @@
 
 - [Hg19 reference genome](ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/technical/reference/phase2_reference_assembly_sequence/hs37d5.fa.gz).
 - [GIAB v0.5.0 VCF](ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/AshkenazimTrio/analysis/NIST_UnionSVs_12122017/svanalyzer_union_171212_v0.5.0_annotated.vcf.gz).
-- [High-confidence regions BED file](ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/AshkenazimTrio/analysis/NIST_SVs_Integration_v0.6/HG002_SVs_Tier1_v0.6.bed).
+
+The SV catalog VCF file was prepared with:
+
+```
+wget -nc ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/AshkenazimTrio/analysis/NIST_UnionSVs_12122017/svanalyzer_union_171212_v0.5.0_annotated.vcf.gz
+wget ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/AshkenazimTrio/analysis/NIST_UnionSVs_12122017/svanalyzer_union_171212_v0.5.0_annotated.vcf.gz.tbi
+vcfkeepinfo svanalyzer_union_171212_v0.5.0_annotated.vcf.gz NA | vcffixup - | bgzip > giab-0.5.vcf.gz
+tabix -f -p vcf giab-0.5.vcf.gz
+```
 
 ## Reads
 
 - Original reads mapped to hg19: []()
 
-The reads were downsampled to 50x using to create `HG002-NA24385-50x.bam`:
+The reads were downsampled to 50x to create `HG002-NA24385-50x.bam`:
 
 ```
 ???
@@ -22,27 +30,22 @@ Using the helper scripts from `../toil-scripts`.
 
 ```
 # construct a 0.50 graph with HG002 control
-./construct-hgsvc.sh  -G -c ${CLUSTER}1 ${JOBSTORE}1x ${OUTSTORE}/GIAB-0.5-FEB26
+./construct.sh  -G -c ${CLUSTER}1 ${JOBSTORE}1x ${OUTSTORE}/GIAB-0.5-FEB26
 
-# map our downsampled 50X reads from the paper
-./mce-hgsvc.sh -p -E " -p -n -m 20" -C " -p" -c ${CLUSTER}1  ${JOBSTORE}1 ${OUTSTORE}/GIAB-0.5-FEB26 s3://${OUTSTORE}/GIAB-0.5-FEB26/GIAB HG002 HG002 s3://${OUTSTORE}/GIAB-0.5-FEB26/giab-0.5.vcf.gz ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/AshkenazimTrio/analysis/NIST_SVs_Integration_v0.6/HG002_SVs_Tier1_v0.6.bed s3://glennhickey/mike-hs37d5-hg002-nov18/bams/HG002-NA24385-50x.bam
+# map our downsampled 50X reads and call variants
+./mapcall.sh -p -E " -p -n -m 20" -C " -p" -c ${CLUSTER}1  ${JOBSTORE}1 ${OUTSTORE}/GIAB-0.5-FEB26 s3://${OUTSTORE}/GIAB-0.5-FEB26/GIAB HG002 HG002 s3://glennhickey/mike-hs37d5-hg002-nov18/bams/HG002-NA24385-50x.bam
 
-aws s3 sync s3://${OUTSTORE}/GIAB-FEB26/eval-HG002 ./GIAB-FEB26-eval-HG002
-aws s3 sync s3://${OUTSTORE}/GIAB-0.5-FEB26/eval-HG002 ./GIAB-0.5-FEB26-eval-HG002
+# download VCF file
+rm -rf ./giab5-vg-HG002.vcf.gz ; aws s3 sync s3://${OUTSTORE}/GIAB-0.5-FEB26/GIAB/call-HG002/HG002.vcf.gz ./giab5-vg-HG002.vcf.gz
 ```
-
 
 ## Delly
 
 ```
-VCF=svanalyzer_union_171212_v0.5.0_annotated.vcf.gz
-BAM=HG002-NA24385-50x.bam
-REF=hs37d5.fa
-
-delly call -g $REF -v $VCF -o temp.bcf $BAM
-bcftools convert temp.bcf > HG002.delly.vcf
-bgzip HG002.delly.vcf
-tabix HG002.delly.vcf.gz
+delly call -g hs37d5.fa -v giab-0.5.vcf.gz -o temp.bcf HG002-NA24385-50x.bam
+bcftools convert temp.bcf > giab5-delly-HG002.vcf
+bgzip giab5-delly-HG002.vcf
+tabix giab5-delly-HG002.vcf.gz
 ```
 
 ## SVTyper
@@ -51,19 +54,17 @@ The explicit VCF was first converted into a symbolic VCF, for deletions only bec
 See *VCFtoSymbolicDEL.py* in [../misc-scripts](../misc-scripts).
 
 ```
-zcat svanalyzer_union_171212_v0.5.0_annotated.vcf.gz | python VCFtoSymbolicDEL.py > giab-0.5.symbolic.dels.vcf
+zcat giab-0.5.vcf.gz | python VCFtoSymbolicDEL.py > giab-0.5.symbolic.dels.vcf
 ```
 
 Then:
 
 ```
-BAM=HG002-NA24385-50x.bam
-
-svtyper -i HGSVC.haps.symbolic.dels.vcf -B $BAM -l libinfo.json > HG002.svtyper.vcf
+svtyper -i giab-0.5.symbolic.dels.vcf -B HG002-NA24385-50x.bam -l libinfo.json > HG002.svtyper.vcf
 vcf-sort HG002.svtyper.vcf | vcfkeepinfo - END SVLEN SVTYPE NS AN | grep -v 'contig' > HG002.svtyper.clean.vcf
-bayesTyperTools convertAllele -v HG002.svtyper.clean.vcf -g ../../haps/hg38.fa --keep-imprecise -o HG002.svtyper.explicit
-vcfkeepinfo HG002.svtyper.explicit.vcf NS AN | bgzip > HG002.svtyper.explicit.vcf.gz
-tabix -f HG002.svtyper.explicit.vcf.gz
+bayesTyperTools convertAllele -v HG002.svtyper.clean.vcf -g ../../haps/hg38.fa --keep-imprecise -o giab5-svtyper-HG002
+vcfkeepinfo giab5-svtyper-HG002.vcf NS AN | bgzip > giab5-svtyper-HG002.vcf.gz
+tabix -f giab5-svtyper-HG002.vcf.gz
 ```
 
 ## BayesTyper
@@ -71,8 +72,7 @@ tabix -f HG002.svtyper.explicit.vcf.gz
 ### kmer counting
 
 ```
-BAM=HG002_NA24385_50x.bam
-kmc -v -k55 -ci1 -fbam -t12 $BAM HG002_NA24385_50x_k55 .
+kmc -v -k55 -ci1 -fbam -t12 HG002_NA24385_50x.bam HG002_NA24385_50x_k55 .
 bayesTyperTools makeBloom -p 12 -k HG002_NA24385_50x_k55
 ```
 
@@ -118,7 +118,6 @@ SNVs/indels were combined with the SV catalog.
 
 ```
 bayesTyperTools combine -v sv:AJ_GRCh37_GIAB_sv_0.5_norm_sort.vcf.gz,all19:HG002_GRCh37_CHROM1-MT_novoalign_Ilmn250x250_FB_xy_norm_sort_sv19.vcf.gz,all19:HG002_GRCh37_CHROM1-MT_novoalign_Ilmn250x250_GATKHC_xy_norm_sort_sv19.vcf.gz,all19:HG002_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-22_v.3.3.2_all_norm_sort_sv19.vcf.gz -o giab_AJ_sv_HG002_all19 -z
-
 ```
 
 ### Genotyping
