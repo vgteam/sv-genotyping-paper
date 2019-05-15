@@ -85,7 +85,7 @@ GIAB_FTP="ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/AshkenazimTrio/HG002
 wget ${GIAB_FTP}/HG002_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-22_v.3.3.2_all.vcf.gz
 bcftools view -r X,Y -O z ${GIAB_FTP}/inputvcfsandbeds/HG002_GRCh37_CHROM1-MT_novoalign_Ilmn250x250_FB.vcf.gz > HG002_GRCh37_CHROM1-MT_novoalign_Ilmn250x250_FB_xy.vcf.gz
 bcftools view -r X,Y -O z ${GIAB_FTP}/inputvcfsandbeds/HG002_GRCh37_CHROM1-MT_novoalign_Ilmn250x250_GATKHC.vcf.gz > HG002_GRCh37_CHROM1-MT_novoalign_Ilmn250x250_GATKHC_xy.vcf.gz
-cp svanalyzer_union_171212_v0.5.0_annotated.vcf.gz giab-0.5.vcf.gz AJ_GRCh37_GIAB_sv_0.5.vcf.gz
+cp giab-0.5.vcf.gz AJ_GRCh37_GIAB_sv_0.5.vcf.gz
 rm *.tbi
 
 # Variant normalization
@@ -108,7 +108,7 @@ for VCF_FILE in HG002_GRCh37*_sort.vcf.gz; do
     VCF_FILENAME=$(basename ${VCF_FILE})
     VCF_PREFIX=${VCF_FILENAME%.vcf.gz}
     echo ${VCF_PREFIX}
-	filterStructuralVariants ${VCF_PREFIX}.vcf.gz ${VCF_PREFIX}_sv19 19 -19 19
+    filterStructuralVariants ${VCF_PREFIX}.vcf.gz ${VCF_PREFIX}_sv19 19 -19 19
 done
 ```
 

@@ -32,7 +32,7 @@ Using the helper scripts from `../toil-scripts`.
 rm -rf ./chmpd-vg-chmpd.vcf.gz ; aws s3 sync s3://${OUTSTORE}/CHMPD-feb12/CHMPD/call-PSEUDOSET-30/PSEUDOSET.vcf.gz ./chmpd-vg-chmpd.vcf.gz
 ```
 
-## SMRTSV2
+## SMRTSV v2
 
 ```
 aws s3 sync s3://${OUTSTORE}/CHMPD-feb12/eval-PSEUDOSET-30 ./CHMPD-feb12-eval-PSEUDOSET

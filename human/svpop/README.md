@@ -46,7 +46,7 @@ rm -rf ./svpop-vg-HG00733.vcf.gz ; aws s3 sync s3://${OUTSTORE}/SVPOP-jan10/call
 rm -rf ./svpop-vg-NA19240.vcf.gz ; aws s3 sync s3://${OUTSTORE}/SVPOP-jan10/call-NA19240/NA19240.vcf.gz ./svpop-vg-NA19240.vcf.gz
 ```
 
-## SMRTSV2
+## SMRTSV v2
 
 ```
 # Smrtsv2 was run on courtyard, then made explicity using the same process as the original svpop graph (see construg-hgsvc.sh)
