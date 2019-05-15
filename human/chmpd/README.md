@@ -1,8 +1,12 @@
 # Pseudo-diploid CHM genome
 
+## Data
 
+- [GRCh38 reference genome](http://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/hg38.fa.gz).
+- VCF `pseudo_diploid-explicit.vcf.gz`
+- Reads.
 
-# toil-vg
+## toil-vg
 
 Using the helper scripts from `../toil-scripts`.
 
@@ -44,4 +48,5 @@ cp sveval-norm-gt/sv_evaluation/prcurve.tsv ~/Documents/Research/manu-vgsv/figur
 popd
 ```
 
-# SMRTSV2
+
+## SMRTSV2
