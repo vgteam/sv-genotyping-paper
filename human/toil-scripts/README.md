@@ -24,7 +24,8 @@ export FQ2=
 
 ## Scripts
 
-- `construct.sh` constructs a graph from a VCF.
+- `construct.sh` prepares the VCF and constructs a graph from it.
 - `simulate.sh` simulates 30X coverage from the graph.
-- `mce.sh` maps reads to a graph.
-- `call.sh` call SVs on a graph.
+- `map.sh` maps reads on a graph.
+- `call.sh` calls SVs on a graph.
+- `mapcall.sh` wrapper to map reads and call variants in a sample.

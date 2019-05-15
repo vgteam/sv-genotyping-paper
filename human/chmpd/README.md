@@ -1,45 +1,42 @@
 # Pseudo-diploid CHM genome
 
-# toil-vg
+## Data
+
+- [GRCh38 reference genome](http://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/hg38.fa.gz).
+
+VCF `pseudo_diploid-explicit.vcf.gz` was created using:
+
+```
+./download.sh
+./add-genotypes.py pseudo_diploid.vcf.gz reduced.tab | bgzip > pseudo_diploid_gt.vcf.gz
+# Note: HG38 should point to a reference fasta that has a .fai index
+./make-explicit.py pseudo_diploid_gt.vcf.gz --fasta ${HG38} | vcfkeepinfo - NA | vcffixup - | bgzip > pseudo_diploid-explicit.vcf.gz
+tabix -f -p vcf pseudo_diploid-explicit.vcf.gz
+```
+
+Reads?
+
+
+## toil-vg
 
 Using the helper scripts from `../toil-scripts`.
 
 ```
 # make the CHM-PSEUDODIPLOID graph
-./construct-hgsvc.sh -s -c ${CLUSTER}2 ${JOBSTORE}2 ${OUTSTORE}/CHMPD-feb12
+./construct.sh -s -c ${CLUSTER}2 ${JOBSTORE}2 ${OUTSTORE}/CHMPD-feb12
 
-# map the 30x reads
+# map the 30x reads and call variants
+./mapcall.sh -c ${CLUSTER}3 ${JOBSTORE}3 ${OUTSTORE}/CHMPD-feb12 s3://${OUTSTORE}/CHMPD-feb12/CHMPD PSEUDOSET PSEUDOSET-30 s3://majorsv-ucsc/gt/gam/aln_30x.gam
 
-./mce-hgsvc.sh -c ${CLUSTER}3 ${JOBSTORE}3 ${OUTSTORE}/CHMPD-feb12 s3://${OUTSTORE}/CHMPD-feb12/CHMPD PSEUDOSET PSEUDOSET-30 s3://${OUTSTORE}/CHMPD-feb12/pseudo_diploid-explicit.vcf.gz ${COMPARE_REGIONS_BED} s3://majorsv-ucsc/gt/gam/aln_30x.gam
-#done
+# download VCF file
+rm -rf ./chmpd-vg-chmpd.vcf.gz ; aws s3 sync s3://${OUTSTORE}/CHMPD-feb12/CHMPD/call-PSEUDOSET-30/PSEUDOSET.vcf.gz ./chmpd-vg-chmpd.vcf.gz
+```
 
+## SMRTSV v2
+
+```
 aws s3 sync s3://${OUTSTORE}/CHMPD-feb12/eval-PSEUDOSET-30 ./CHMPD-feb12-eval-PSEUDOSET
-
-
 # then do the SMRTSV that we copied from courtyard
 # note that we made it explicit with
 # ./make-explicit.py PSEUDOSET-smrtsv.vcf.gz --fasta ~/dev/work/references/hg38.fa.gz  | vcfkeepinfo - NA | vcffixup - | bgzip > PSEUDOSET-smrtsv-explicit.vcf.gz
-
-./eval-hgsvc.sh -c ${CLUSTER}1 ${JOBSTORE}1x ${OUTSTORE}/CHMPD-feb12/eval-PSEUDOSET-30-smrtsv s3://${OUTSTORE}/CHMPD-feb12/pseudo_diploid-explicit.vcf.gz  s3://glennhickey/outstore/CHMPD-feb12/call-PSEUDOSET-30-smrtsv/PSEUDOSET-smrtsv.explicit.vcf.gz ${COMPARE_REGIONS_BED} PSEUDOSET
-
-aws s3 sync s3://${OUTSTORE}/CHMPD-feb12/eval-PSEUDOSET-30-smrtsv ./CHMPD-feb12-eval-PSEUDOSET-smrtsv
-
-### move to manuscript sv
-pushd CHMPD-feb12-eval-PSEUDOSET-smrtsv
-for i in sveval* ; do cd $i; tar zxf sv_evaluation.tar.gz; cd ..; done
-cp sveval-norm/sv_evaluation/prcurve.tsv ~/Documents/Research/manu-vgsv/figures/data/chmpd-smrtsv2-prcurve.tsv 
-cp sveval-clip-norm/sv_evaluation/prcurve.tsv ~/Documents/Research/manu-vgsv/figures/data/chmpd-smrtsv2-clip-prcurve.tsv 
-cp sveval-clip-norm-gt/sv_evaluation/prcurve.tsv ~/Documents/Research/manu-vgsv/figures/data/chmpd-smrtsv2-clip-prcurve-geno.tsv
-cp sveval-norm-gt/sv_evaluation/prcurve.tsv ~/Documents/Research/manu-vgsv/figures/data/chmpd-smrtsv2-prcurve-geno.tsv
-popd
-
-pushd CHMPD-feb12-eval-PSEUDOSET
-for i in sveval* ; do cd $i; tar zxf sv_evaluation.tar.gz; cd ..; done
-cp sveval-norm/sv_evaluation/prcurve.tsv ~/Documents/Research/manu-vgsv/figures/data/chmpd-construct-prcurve.tsv 
-cp sveval-clip-norm/sv_evaluation/prcurve.tsv ~/Documents/Research/manu-vgsv/figures/data/chmpd-construct-clip-prcurve.tsv 
-cp sveval-clip-norm-gt/sv_evaluation/prcurve.tsv ~/Documents/Research/manu-vgsv/figures/data/chmpd-construct-clip-prcurve-geno.tsv
-cp sveval-norm-gt/sv_evaluation/prcurve.tsv ~/Documents/Research/manu-vgsv/figures/data/chmpd-construct-prcurve-geno.tsv
-popd
 ```
-
-# SMRTSV2
