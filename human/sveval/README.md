@@ -1,6 +1,6 @@
 The evaluation pipeline uses `toil-vg vcfeval` and, internally, the [sveval R package](https://github.com/jmonlong/sveval).
 [Snakemake](https://snakemake.readthedocs.io/en/stable/) was used to automate evaluation across the different samples, methods, and parameters (SV presence vs genotype, whole-genome vs non-repeat regions).
-For more details see the [Snakemake file](Snakemake).
+For more details see the [Snakemake file](Snakefile).
 
 To run the evaluation
 
