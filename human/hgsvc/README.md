@@ -175,7 +175,7 @@ bayesTyper cluster -v all_hgsvc_pp49_hc49.vcf.gz -s samples.txt -g hg38_canon.fa
 bayesTyper genotype -v bayestyper_unit_1/variant_clusters.bin -c bayestyper_cluster_data -s samples.txt -g hg38_canon.fa -d hg38_decoy.fa -o ${OUT_PREFIX} -z -p 24 -r 12345678 --min-genotype-posterior 0
 
 bcftools filter -i 'FILTER=="PASS"' ${OUT_PREFIX}.vcf.gz | gzip -c 1> ${OUT_PREFIX}_pass.vcf.gz
-~/tools/filterAlleleCallsetOrigin ${OUT_PREFIX}_pass.vcf.gz ${OUT_PREFIX}_pass_hgsvc hc,pp,. 1
+filterAlleleCallsetOrigin ${OUT_PREFIX}_pass.vcf.gz ${OUT_PREFIX}_pass_hgsvc hc,pp,. 1
 ```
 
 `samples.txt` contains paths to the kmers counts:
