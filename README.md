@@ -18,6 +18,8 @@ In the [`human`](human) directory, there is one folder for each dataset with the
 
 There is also a [`toil-scripts`](human/toil-scripts) folder with helper scripts that were used to run the analysis on AWS.
 
+The commands for the evaluation, using [Snakemake](https://snakemake.readthedocs.io/en/stable/), are available in the [`sveval`](human/sveval) folder.
+
 ## De-novo assembly graph experiments in yeast
 
 

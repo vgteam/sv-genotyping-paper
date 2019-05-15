@@ -1,16 +1,18 @@
 # HGSVC
 
-##  Commands used to download the data
+## Data
 
-```
-for name in HG00514 HG00733 NA19240 HG00514-sim
-do
-aws s3 sync s3://${OUTSTORE}/HGSVC/eval-${name} ./HGSVC-jan5-eval-${name}
-done
-```
+- [GRCh38 reference genome](http://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/hg38.fa.gz).
+- Phased VCFs for the three Human Genome Structural Variation Consortium (HGSVC) samples from [Chaisson et al. Nat Comms 2019](https://www.nature.com/articles/s41467-018-08148-z).
 
 The merged VCF with SVs from the three samples was created using [make-vcf.sh](make-vcf.sh).
 It creates a `HGSVC.haps.vcf.gz` file.
+
+### Reads
+
+- HG00514: ERR903030 [1](ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR903/ERR903030/ERR903030_1.fastq.gz) [2](ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR903/ERR903030/ERR903030_2.fastq.gz).
+- HG00733: ERR895347 [1](ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR894/ERR894724/ERR894724_1.fastq.gz) [2](ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR894/ERR894724/ERR894724_2.fastq.gz).
+- NA19240: ERR894724 [1](ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR894/ERR894724/ERR894724_1.fastq.gz) [2](ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR894/ERR894724/ERR894724_2.fastq.gz).
 
 ## toil-vg
 
@@ -58,9 +60,9 @@ Using the helper scripts from `../toil-scripts`.
 ./mce.sh -c ${CLUSTER}3  ${JOBSTORE}3 ${OUTSTORE}/HGSVC s3://${OUTSTORE}/HGSVC/HGSVC NA19240 NA19240 s3://${OUTSTORE}/HGSVC/HGSVC.haps.vcf.gz ${COMPARE_REGIONS_BED} ${FQBASE}/NA19240/ERR894724_1.fastq.gz ${FQBASE}/NA19240/ERR894724_2.fastq.gz 
 ```
 
-## Other methods
+## Mapping reads to GRCh38
 
-### Mapping reads to GRCh38
+For example for NA19240:
 
 ```
 bwa mem -t 12 hg38_noalt.fa ERR894724_1.fq.gz ERR894724_2.fq.gz | samtools view -bh - | samtools sort -o ERR894724_bwa_mem_sort.bam -
@@ -70,7 +72,7 @@ picard MarkDuplicates I=ERR894724_bwa_mem_sort_rg.bam O=ERR894724_bwa_mem_sort_r
 rm ERR894724_bwa_mem_sort_rg.*
 ```
 
-### Delly
+## Delly
 
 For each sample:
 
@@ -86,9 +88,10 @@ bgzip $SAMP.delly.vcf
 tabix $SAMP.delly.vcf.gz
 ```
 
-### SVTyper
+## SVTyper
 
 The explicit VCF was first converted into a symbolic VCF, for deletions only because SVTyper cannot genotype insertions.
+See *VCFtoSymbolicDEL.py* in [../misc-scripts](../misc-scripts).
 
 ```
 zcat HGSVC.haps.vcf.gz | python VCFtoSymbolicDEL.py > HGSVC.haps.symbolic.dels.vcf
@@ -107,79 +110,87 @@ vcfkeepinfo $SAMP.svtyper.explicit.vcf NS AN | bgzip > $SAMP.svtyper.explicit.vc
 tabix -f $SAMP.svtyper.explicit.vcf.gz
 ```
 
-### BayesTyper
+## BayesTyper
+
+### kmer counting
+
+For each sample (here for NA19240):
 
 ```
-FASTQ=XXX.fastq
 kmc -v -k55 -m128 -sm -ci1 -t12 @reads.txt ERR894724_k55 .
 bayesTyperTools makeBloom -p 12 -k ERR894724_k55
 ```
 
-With `reads.txt` containing two lines with the paths to the FASQ files for the sample.
+With `reads.txt` containing two lines with the paths to the FASTQ files for the sample, for example:
 
-#### Calling SNVs
+```
+ERR894724_1.fq.gz
+ERR894724_2.fq.gz
+```
 
-Haplotype caller
+### SNVs
+
+SNVs were called using GATK Haplotype Caller and Platypus.
+Variants were normalized and then filtered to keep only variants smaller than 50 bp.
+
+#### GATK Haplotype Caller
+
+For each sample (here for NA19240):
 
 ```
 gatk3 -Xmx256G -T HaplotypeCaller -R hg38_noalt.fa -nct 12 -I ERR894724_bwa_mem_sort_rg_md.bam -o ERR894724_bwa_mem_sort_md_haplotypecaller.vcf
 gzip ERR894724_bwa_mem_sort_md_haplotypecaller.vcf
-
-# Norm
 VCF_PREFIX=ERR894724_bwa_mem_sort_md_haplotypecaller
-GENOME_DIR=XXX
-bcftools norm -c x -m -any -f ${GENOME_DIR}/hg38_noalt.fa ${VCF_PREFIX}.vcf.gz | cut -f1-8 | bcftools annotate -x FORMAT,INFO > ${VCF_PREFIX}_norm.vcf
+bcftools norm -c x -m -any -f hg38_noalt.fa ${VCF_PREFIX}.vcf.gz | cut -f1-8 | bcftools annotate -x FORMAT,INFO > ${VCF_PREFIX}_norm.vcf
 gzip ${VCF_PREFIX}_norm.vcf
-
-# Filter
 filterStructuralVariants ERR894724_bwa_mem_sort_md_haplotypecaller_norm.vcf.gz ERR894724_bwa_mem_sort_md_haplotypecaller_norm_sv49 49 -49 49
 ```
 
-Platypus
+#### Platypus
+
+For each sample (here for NA19240):
 
 ```
 platypus callVariants --bamFiles=ERR894724_bwa_mem_sort.bam --refFile=hg38_noalt.fa --output=ERR894724_bwa_mem_sort_platypus.vcf --logFileName=platypus_log.txt --nCPU 12 --assemble=1 --assembleBrokenPairs=1
 bgzip ERR894724_bwa_mem_sort_platypus.vcf
 tabix ERR894724_bwa_mem_sort_platypus.vcf.gz
-
-# Norm
 VCF_PREFIX=ERR894724_bwa_mem_sort_platypus
-GENOME_DIR=XXX
-bcftools norm -c x -m -any -f ${GENOME_DIR}/hg38_noalt.fa ${VCF_PREFIX}.vcf.gz | cut -f1-8 | bcftools annotate -x FORMAT,INFO > ${VCF_PREFIX}_norm.vcf
-picard UpdateVcfSequenceDictionary I=${VCF_PREFIX}_norm.vcf O=${VCF_PREFIX}_norm_header.vcf SD=${GENOME_DIR}/hg38_noalt.dict
-picard SortVcf I=${VCF_PREFIX}_norm_header.vcf O=${VCF_PREFIX}_norm_sort.vcf SD=${GENOME_DIR}/hg38_noalt.dict
+bcftools norm -c x -m -any -f hg38_noalt.fa ${VCF_PREFIX}.vcf.gz | cut -f1-8 | bcftools annotate -x FORMAT,INFO > ${VCF_PREFIX}_norm.vcf
+picard UpdateVcfSequenceDictionary I=${VCF_PREFIX}_norm.vcf O=${VCF_PREFIX}_norm_header.vcf SD=hg38_noalt.dict
+picard SortVcf I=${VCF_PREFIX}_norm_header.vcf O=${VCF_PREFIX}_norm_sort.vcf SD=hg38_noalt.dict
 rm ${VCF_PREFIX}_norm.vcf
 rm ${VCF_PREFIX}_norm_header.vcf
 rm ${VCF_PREFIX}_norm_sort.vcf.idx
 gzip ${VCF_PREFIX}_norm_sort.vcf
-
-# Filter
 filterStructuralVariants ERR894724_bwa_mem_sort_platypus_norm_sort.vcf.gz ERR894724_bwa_mem_sort_platypus_norm_sort_sv49 49 -49 49
 ```
 
-Variants were then combined across all samples:
+### Combining variants
+
+SNVs/indels across all samples were combined with the SV catalog.
 
 ```
 bayesTyperTools combine -v hgsvc:HGSVC.haps_norm_sort.vcf.gz,pp:ERR903030_bwa_mem_sort_platypus_norm_sort_sv49.vcf.gz,pp:ERR895347_bwa_mem_sort_platypus_norm_sort_sv49.vcf.gz,pp:ERR894724_bwa_mem_sort_platypus_norm_sort_sv49.vcf.gz,hc:ERR903030_bwa_mem_sort_md_haplotypecaller_norm_sv49.vcf.gz,hc:ERR895347_bwa_mem_sort_md_haplotypecaller_norm_sv49.vcf.gz,hc:ERR894724_bwa_mem_sort_md_haplotypecaller_norm_sv49.vcf.gz -o all_hgsvc_pp49_hc49 -z
 ```
 
-BayesTyper genotyping
+### Genotyping
+
+The three samples were genotyped jointly.
 
 ```
-MAIN_DIR=XXX
 OUT_PREFIX=bayestyper_unit_1/all_hgsvc_pp49_hc49_bayestyper
 
-bayesTyper cluster -v all_hgsvc_pp49_hc49.vcf.gz -s samples.txt -g ${MAIN_DIR}/genome/hg38_canon.fa -d ${MAIN_DIR}/genome/hg38_decoy.fa -p 24 -r 12345678 --min-number-of-unit-variants 10000000
-bayesTyper genotype -v bayestyper_unit_1/variant_clusters.bin -c bayestyper_cluster_data -s samples.txt -g ${MAIN_DIR}/genome/hg38_canon.fa -d ${MAIN_DIR}/genome/hg38_decoy.fa -o ${OUT_PREFIX} -z -p 24 -r 12345678 --min-genotype-posterior 0
+bayesTyper cluster -v all_hgsvc_pp49_hc49.vcf.gz -s samples.txt -g hg38_canon.fa -d hg38_decoy.fa -p 24 -r 12345678 --min-number-of-unit-variants 10000000
+bayesTyper genotype -v bayestyper_unit_1/variant_clusters.bin -c bayestyper_cluster_data -s samples.txt -g hg38_canon.fa -d hg38_decoy.fa -o ${OUT_PREFIX} -z -p 24 -r 12345678 --min-genotype-posterior 0
 
 bcftools filter -i 'FILTER=="PASS"' ${OUT_PREFIX}.vcf.gz | gzip -c 1> ${OUT_PREFIX}_pass.vcf.gz
 ~/tools/filterAlleleCallsetOrigin ${OUT_PREFIX}_pass.vcf.gz ${OUT_PREFIX}_pass_hgsvc hc,pp,. 1
 ```
 
-`samples.txt` contains:
+`samples.txt` contains paths to the kmers counts:
 
 ```
-HG00514	F	/public/groups/cgl/graph-genomes/jsibbese/hgsvc/real/HG00514/kmers/ERR903030_k55
-HG00733	F	/public/groups/cgl/graph-genomes/jsibbese/hgsvc/real/HG00733/kmers/ERR895347_k55
-NA19240	F	/public/groups/cgl/graph-genomes/jsibbese/hgsvc/real/NA19240/kmers/ERR894724_k55
+HG00514	F	ERR903030_k55
+HG00733	F	ERR895347_k55
+NA19240	F	ERR894724_k55
 ```

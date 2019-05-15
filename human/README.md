@@ -8,3 +8,5 @@ There is one folder for each dataset with the commands to download/prepare the d
 * [SV catalog from Audano et al. Cell 2019 (SVPOP)](svpop)
 
 There is also a [`toil-scripts`](toil-scripts) folder with helper scripts to were used to run the analysis on AWS.
+
+The commands for the **evaluation**, using Snakemake, are available in the [`sveval`](sveval) folder.

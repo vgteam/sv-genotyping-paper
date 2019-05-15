@@ -1,0 +1,166 @@
+DEBUG=""
+## DEBUG="--workDir ./temp/ --cleanWorkDir never"
+
+## Reference files
+HGSVC_BED="/public/home/hickey/dev/hgsvc/test-compare/hg38_non_repeats.bed"
+REP_BED="hg38_repeats.bed"
+HGSVC_VCF="../glenndata/HGSVC.haps.vcf.gz"
+SVPOP_VCF="../glenndata/sv-pop-explicit.vcf.gz"
+CHMPD_VCF="../glenndata/pseudo_diploid-explicit.vcf.gz"
+REF38="../haps/hg38.fa"
+GIAB_VCF="../glenndata/giab-0.5.vcf.gz"
+GIAB_BED="../glenndata/HG002_SVs_Tier1_v0.6.bed"
+REF37="../glenndata/hs37d5.fa"
+
+#### Enumerate all the TSV files for HGSVC
+METHODS  = 'vg delly svtyper bayestyper'.split()
+REGS = 'all nonrep'.split()
+EVAL = 'call geno'.split()
+## HGSVC real reads
+SAMPLES = 'HG00514 HG00733 NA19240'.split()
+HGSVC_TSVS = expand('tsv/hgsvc-{method}-{sample}-{region}-{eval}-prcurve.tsv', method=METHODS, sample=SAMPLES, region=REGS, eval=EVAL)
+## HGSVC simulated reads
+HGSVC_TSVS = HGSVC_TSVS + expand('tsv/hgsvcsim-{method}-HG00514-{region}-{eval}-prcurve.tsv', method=METHODS, region=REGS, eval=EVAL)
+####
+
+#### Enumerate all the TSV files for GIAB5
+METHODS  = 'vg delly svtyper bayestyper'.split()
+REGS = 'all nonrep'.split()
+EVAL = 'call geno'.split()
+GIAB5_TSVS = expand('tsv/giab5-{method}-HG002-{region}-{eval}-prcurve.tsv', method=METHODS, region=REGS, eval=EVAL)
+####
+
+#### Enumerate all the TSV files for SVPOP
+METHODS  = 'vg smrtsv'.split()
+SAMPLES = 'HG00514 HG00733 NA19240'.split()
+REGS = 'all nonrep'.split()
+EVAL = 'call'.split()
+SVPOP_TSVS = expand('tsv/svpop-{method}-{sample}-{region}-{eval}-prcurve.tsv', method=METHODS, sample=SAMPLES, region=REGS, eval=EVAL)
+NOCALLS_BED="nocalls-HG00514-vg-smrtsv.bed"
+CALLED_BED="called-HG00514-vg-smrtsv.bed"
+####
+
+#### Enumerate all the TSV files for pseudo-diploid CHM sample
+METHODS  = 'vg smrtsv'.split()
+SAMPLES = 'chmpd'.split()
+REGS = 'all nonrep'.split()
+EVAL = 'call geno'.split()
+CHMPD_TSVS = expand('tsv/chmpd-{method}-{sample}-{region}-{eval}-prcurve.tsv', method=METHODS, sample=SAMPLES, region=REGS, eval=EVAL)
+####
+
+## Rules
+rule hgsvc:
+    input:
+        HGSVC_TSVS
+
+rule giab5:
+    input:
+        GIAB5_TSVS
+
+rule svpop:
+    input:
+        SVPOP_TSVS
+
+rule chmpd:
+    input:
+        CHMPD_TSVS
+
+rule indexvcf:
+    input:
+        "vcf/{exp}-{method}-{sample}.vcf.gz"
+    output:
+        "vcf/{exp}-{method}-{sample}.vcf.gz.tbi"
+    shell:
+        "tabix {input}"
+
+rule toilvg:
+    input:
+        vcf="vcf/{exp}-{method}-{sample}.vcf.gz",
+        tbi="vcf/{exp}-{method}-{sample}.vcf.gz.tbi",
+    output:
+        "sveval-{exp}-{method}-{sample}-{region}-{eval}/sv_evaluation.tar.gz"
+    params:
+        dir="sveval-{exp}-{method}-{sample}-{region}-{eval}"
+    run:
+        shell("rm -fr js")
+        REF = REF38
+        TRUTH = HGSVC_VCF
+        BED = HGSVC_BED
+        INV = ""
+        if wildcards.exp == 'giab5':
+            REF = REF37
+            TRUTH = GIAB_VCF
+            BED = GIAB_BED
+        if wildcards.exp == 'svpop':
+            TRUTH = SVPOP_VCF
+            INV = "--check_inv"
+        if wildcards.exp == 'chmpd':
+            TRUTH = CHMPD_VCF
+        NORM = ""
+        if wildcards.region == 'nonrep':
+            NORM = "--vcfeval_bed_regions {}".format(BED)
+        if wildcards.region == 'rep':
+            NORM = "--vcfeval_bed_regions {}".format(REP_BED)
+        if wildcards.region == 'nocalls':
+            NORM = "--vcfeval_bed_regions {}".format(NOCALLS_BED)
+        if wildcards.region == 'called':
+            NORM = "--vcfeval_bed_regions {}".format(CALLED_BED)
+        GENO = ""
+        if wildcards.eval == 'geno':
+            GENO = "--genotype_eval"
+        shell("toil-vg vcfeval ./js ./{params.dir} --vcfeval_baseline ./{TRUTH} --call_vcf ./{input.vcf} --sveval --min_sv_len 50 --vcfeval_sample {wildcards.sample} --normalize --vcfeval_fasta {REF} {NORM} {INV} {GENO} {DEBUG}")
+
+rule untar:
+    input:
+        "sveval-{exp}-{method}-{sample}-{region}-{eval}/sv_evaluation.tar.gz",
+    output:
+        "sveval-{exp}-{method}-{sample}-{region}-{eval}/sv_evaluation/prcurve.tsv"
+    params:
+        dir="sveval-{exp}-{method}-{sample}-{region}-{eval}"
+    shell:
+        "tar -xzvf {input} -C {params.dir}"
+
+rule rename:
+    input:
+        "sveval-{exp}-{method}-{sample}-{region}-{eval}/sv_evaluation/prcurve.tsv"
+    output:
+        "tsv/{exp}-{method}-{sample}-{region}-{eval}-prcurve.tsv"
+    shell:
+        "cp {input} {output}"
+
+rule clean:
+    shell:
+        "rm -rf sveval-*"
+
+rule cleanall:
+    shell:
+        "rm -rf tsv sveval-*"
+
+
+rule single:
+    input:
+        'tsv/{exp}-{method}-{sample}-all-call-prcurve.tsv',
+        'tsv/{exp}-{method}-{sample}-nonrep-call-prcurve.tsv',
+        'tsv/{exp}-{method}-{sample}-all-geno-prcurve.tsv',
+        'tsv/{exp}-{method}-{sample}-nonrep-geno-prcurve.tsv'
+    output:
+        'single-{exp}-{method}-{sample}'
+
+rule singlenocalls:
+    input:
+        'tsv/{exp}-{method}-{sample}-all-call-prcurve.tsv',
+        'tsv/{exp}-{method}-{sample}-nonrep-call-prcurve.tsv',
+        'tsv/{exp}-{method}-{sample}-rep-call-prcurve.tsv',
+        'tsv/{exp}-{method}-{sample}-nocalls-call-prcurve.tsv',
+        'tsv/{exp}-{method}-{sample}-called-call-prcurve.tsv',
+    output:
+        'singlenocalls-{exp}-{method}-{sample}'
+
+rule vcfnorm:
+    input:
+        '{vcf}.vcf.gz'
+    output:
+        '{vcf}-norm.vcf.gz'
+    shell:
+        'bcftools view {input} --exclude \'GT="0" || GT="." || GT="1"\' | bcftools norm - --fasta-ref {REF38} --multiallelic -both | bcftools norm - --fasta-ref {REF38} --multiallelic +both | bcftools sort | bgzip > {output}'
+
