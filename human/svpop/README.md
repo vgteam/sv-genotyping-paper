@@ -46,9 +46,38 @@ rm -rf ./svpop-vg-HG00733.vcf.gz ; aws s3 sync s3://${OUTSTORE}/SVPOP-jan10/call
 rm -rf ./svpop-vg-NA19240.vcf.gz ; aws s3 sync s3://${OUTSTORE}/SVPOP-jan10/call-NA19240/NA19240.vcf.gz ./svpop-vg-NA19240.vcf.gz
 ```
 
-## SMRTSV v2
+## SMRT-SV v2
+
+SMRT-SV was obtained from [github](https://github.com/EichlerLab/smrtsv2) using commit 43d28cbd4e76ed2a4e820ded11a80592675db6c9 (the then-current master branch).
+It was then run as described in its [README](https://github.com/EichlerLab/smrtsv2/blob/master/GENOTYPE.md), on a single server
+```
+${SMRTSV_DIR}/smrtsv --jobs 20 genotype genotyper.json variants.vcf.gz
 
 ```
-# Smrtsv2 was run on courtyard, then made explicity using the same process as the original svpop graph (see construg-hgsvc.sh)
-# (all three samples are in one VCF: svpop-smrtsv-hgsvc-explicit.vcf.gz)
+Where genotyper.json contained (the VCF and BAM were downloaded from the FTP site listed above (ftp.1000genomes.ebi.ac.uk))
+```
+{
+  "sample_manifest": "hgsvc-samples.tab",
+  "sv_reference": "hg38.fa",
+  "sv_calls": "EEE_SV-Pop_1.ALL.sites.20181204.vcf.gz",
+  "sv_contigs": "EEE_SV-Pop_1.ALL.sites.20181204.bam",
+  "model": "30x-4",
+  "min_call_depth": 8
+}
+
+```
+and hsvc-samples.tab contained:
+```
+SAMPLE	SEX	DATA
+HG00514	F	hgsvc-bams/ERR903030_bwa_mem_sort_rg_md.bam
+HG00733	F	hgsvc-bams/ERR895347_bwa_mem_sort_rg_md.bam
+NA19240	F	hgsvc-bams/ERR894724_bwa_mem_sort_rg_md.bam
+```
+
+The BAMs were made as described [here](https://github.com/vgteam/sv-genotyping-paper/tree/master/human/hgsvc)
+
+The VCFs output by this version of SMRT-SV v2 are invalid due to a bug which outputs the wrong values in the REF column.  This was corrected by re-extracting the REF values from the FASTA using [this script](https://github.com/vgteam/sv-genotyping-paper/blob/master/human/chmpd/make-explicit.py) on variants.vcf.gz.  At the same time, the symbolic alleles were converted to explict alleles.  
+
+```
+./make-explicit.py variants.vcf.gz --fasta hg38.fa.gz  | vcfkeepinfo - NA | vcffixup - | bgzip > svpop-smrtsv-explicit.vcf.gz
 ```
