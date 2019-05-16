@@ -16,13 +16,9 @@ tabix -f -p vcf giab-0.5.vcf.gz
 
 ## Reads
 
-- Original reads mapped to hg19: []()
+- [Original reads mapped to hg19](ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/AshkenazimTrio/HG002_NA24385_son/NIST_HiSeq_HG002_Homogeneity-10953946/NHGRI_Illumina300X_AJtrio_novoalign_bams/HG002.hs37d5.300x.bam)
 
-The reads were downsampled to 50x to create `HG002-NA24385-50x.bam`:
-
-```
-???
-```
+The reads were downsampled with samtools to 50x to create `HG002-NA24385-50x.bam`:
 
 ## toil-vg
 
