@@ -5,6 +5,15 @@ They are primarily dependent on [toil-vg](https://github.com/vgteam/toil-vg), wh
 
 Links to necessary data are also listed for each analysis.
 
+Of note the code to reproduce the figures and tables in the manuscript are available in [the manuscript's repo](https://github.com/jmonlong/manu-vgsv/tree/master/figures).
+
+## Simulation experiment
+
+The different methods were compared on simulated sequence and SVs.
+Different depth were tested. 
+We also tested the effect of errors in the breakpoint location of the SVs.
+Scripts are available and described in the [`simulation`](simulation) folder.
+
 ## Whole genome experiments in human
 
 These were run on AWS via [Toil](http://toil.ucsc-cgl.org/). 
