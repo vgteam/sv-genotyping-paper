@@ -1,6 +1,6 @@
 The evaluation pipeline uses `toil-vg vcfeval` and, internally, the [sveval R package](https://github.com/jmonlong/sveval).
 [Snakemake](https://snakemake.readthedocs.io/en/stable/) was used to automate evaluation across the different samples, methods, and parameters (SV presence vs genotype, whole-genome vs non-repeat regions).
-For more details see the [Snakemake file](Snakefile).
+For more details see the [Snakefile](Snakefile).
 
 To run the evaluation
 
@@ -28,6 +28,9 @@ For the Genome in a bottle dataset:
 
 
 ## Preparing the VCF files
+
+The VCFs containing genotype prediction for each method on the different datasets were produced with the commands in [each dataset's folder](..).
+Those VCFs are also available at [https://s3-us-west-2.amazonaws.com/human-pangenomics/index.html?prefix=vgsv2019/vcfs/](https://s3-us-west-2.amazonaws.com/human-pangenomics/index.html?prefix=vgsv2019/vcfs/). 
 
 Before evaluation, some VCF files were reformatted or renamed.
 

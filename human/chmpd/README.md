@@ -4,7 +4,9 @@
 
 - [GRCh38 reference genome](http://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/hg38.fa.gz).
 
-This dataset is not, to our knowledge, publicly available.  We obtained the following files (referred to below) directly from SMRT-SV v2's author, Peter Audano.
+This dataset was generated and used in [Audano et al. Cell 2019](https://doi.org/10.1016/j.cell.2018.12.019).
+It is not, to our knowledge, publicly available. 
+We obtained the following files (referred to below) directly from SMRT-SV v2's author, Peter Audano.
 
 ```
 # VCF to genotype

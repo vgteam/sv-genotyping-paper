@@ -30,6 +30,8 @@ There is also a [`toil-scripts`](human/toil-scripts) folder with helper scripts 
 
 The commands for the evaluation, using [Snakemake](https://snakemake.readthedocs.io/en/stable/), are available in the [`sveval`](human/sveval) folder.
 
+The VCFs produced produced by vg and the other methods across these datasets are available at [https://s3-us-west-2.amazonaws.com/human-pangenomics/index.html?prefix=vgsv2019/vcfs/](https://s3-us-west-2.amazonaws.com/human-pangenomics/index.html?prefix=vgsv2019/vcfs/). 
+
 ## De-novo assembly graph experiments in yeast
 
 

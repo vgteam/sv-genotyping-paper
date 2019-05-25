@@ -3,6 +3,7 @@
 ## Data
 
 - [GRCh38 reference genome](http://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/hg38.fa.gz).
+- SVPOP catalog from [Audano et al. Cell 2019](https://doi.org/10.1016/j.cell.2018.12.019).
 
 The VCF file with the SV catalog (`sv-pop-explicit.vcf.gz`) was prepared with:
 
