@@ -19,8 +19,10 @@ EVAL = 'call geno'.split()
 ## HGSVC real reads
 SAMPLES = 'HG00514 HG00733 NA19240'.split()
 HGSVC_TSVS = expand('tsv/hgsvc-{method}-{sample}-{region}-{eval}-prcurve.tsv', method=METHODS, sample=SAMPLES, region=REGS, eval=EVAL)
+HGSVC_TSVS += expand('tsv/hgsvc-{method}-{sample}-{region}-{eval}-persize.tsv', method=METHODS, sample=SAMPLES, region=REGS, eval=EVAL)
 ## HGSVC simulated reads
-HGSVC_TSVS = HGSVC_TSVS + expand('tsv/hgsvcsim-{method}-HG00514-{region}-{eval}-prcurve.tsv', method=METHODS, region=REGS, eval=EVAL)
+HGSVC_TSVS += expand('tsv/hgsvcsim-{method}-HG00514-{region}-{eval}-prcurve.tsv', method=METHODS, region=REGS, eval=EVAL)
+HGSVC_TSVS += expand('tsv/hgsvcsim-{method}-HG00514-{region}-{eval}-persize.tsv', method=METHODS, region=REGS, eval=EVAL)
 ####
 
 #### Enumerate all the TSV files for GIAB5
@@ -28,6 +30,7 @@ METHODS  = 'vg delly svtyper bayestyper'.split()
 REGS = 'all nonrep'.split()
 EVAL = 'call geno'.split()
 GIAB5_TSVS = expand('tsv/giab5-{method}-HG002-{region}-{eval}-prcurve.tsv', method=METHODS, region=REGS, eval=EVAL)
+GIAB5_TSVS += expand('tsv/giab5-{method}-HG002-{region}-{eval}-persize.tsv', method=METHODS, region=REGS, eval=EVAL)
 ####
 
 #### Enumerate all the TSV files for SVPOP
@@ -36,6 +39,7 @@ SAMPLES = 'HG00514 HG00733 NA19240'.split()
 REGS = 'all nonrep'.split()
 EVAL = 'call'.split()
 SVPOP_TSVS = expand('tsv/svpop-{method}-{sample}-{region}-{eval}-prcurve.tsv', method=METHODS, sample=SAMPLES, region=REGS, eval=EVAL)
+SVPOP_TSVS += expand('tsv/svpop-{method}-{sample}-{region}-{eval}-persize.tsv', method=METHODS, sample=SAMPLES, region=REGS, eval=EVAL)
 NOCALLS_BED="nocalls-HG00514-vg-smrtsv.bed"
 CALLED_BED="called-HG00514-vg-smrtsv.bed"
 ####
@@ -46,9 +50,17 @@ SAMPLES = 'chmpd'.split()
 REGS = 'all nonrep'.split()
 EVAL = 'call geno'.split()
 CHMPD_TSVS = expand('tsv/chmpd-{method}-{sample}-{region}-{eval}-prcurve.tsv', method=METHODS, sample=SAMPLES, region=REGS, eval=EVAL)
+CHMPD_TSVS += expand('tsv/chmpd-{method}-{sample}-{region}-{eval}-persize.tsv', method=METHODS, sample=SAMPLES, region=REGS, eval=EVAL)
 ####
 
 ## Rules
+rule all:
+    input:
+        HGSVC_TSVS,
+        GIAB5_TSVS,
+        SVPOP_TSVS,
+        CHMPD_TSVS
+
 rule hgsvc:
     input:
         HGSVC_TSVS
@@ -82,7 +94,6 @@ rule toilvg:
     params:
         dir="sveval-{exp}-{method}-{sample}-{region}-{eval}"
     run:
-        shell("rm -fr js")
         REF = REF38
         TRUTH = HGSVC_VCF
         BED = HGSVC_BED
@@ -108,13 +119,15 @@ rule toilvg:
         GENO = ""
         if wildcards.eval == 'geno':
             GENO = "--genotype_eval"
-        shell("toil-vg vcfeval ./js ./{params.dir} --vcfeval_baseline ./{TRUTH} --call_vcf ./{input.vcf} --sveval --min_sv_len 50 --vcfeval_sample {wildcards.sample} --normalize --vcfeval_fasta {REF} {NORM} {INV} {GENO} {DEBUG}")
+        shell("rm -fr js_{params.dir}")
+        shell("toil-vg vcfeval ./js_{params.dir} ./{params.dir} --vcfeval_baseline ./{TRUTH} --call_vcf ./{input.vcf} --sveval --min_sv_len 50 --vcfeval_sample {wildcards.sample} --normalize --vcfeval_fasta {REF} {NORM} {INV} {GENO} {DEBUG} --maxCores 1")
 
 rule untar:
     input:
         "sveval-{exp}-{method}-{sample}-{region}-{eval}/sv_evaluation.tar.gz",
     output:
-        "sveval-{exp}-{method}-{sample}-{region}-{eval}/sv_evaluation/prcurve.tsv"
+        "sveval-{exp}-{method}-{sample}-{region}-{eval}/sv_evaluation/prcurve.tsv",
+        "sveval-{exp}-{method}-{sample}-{region}-{eval}/sv_evaluation/eval.RData"
     params:
         dir="sveval-{exp}-{method}-{sample}-{region}-{eval}"
     shell:
@@ -127,6 +140,16 @@ rule rename:
         "tsv/{exp}-{method}-{sample}-{region}-{eval}-prcurve.tsv"
     shell:
         "cp {input} {output}"
+
+rule persize:
+    input:
+        "sveval-{exp}-{method}-{sample}-{region}-{eval}/sv_evaluation/eval.RData"
+    output:
+        "tsv/{exp}-{method}-{sample}-{region}-{eval}-persize.tsv"
+    shell:
+        """
+        Rscript persize.R {input} {output}
+        """
 
 rule clean:
     shell:

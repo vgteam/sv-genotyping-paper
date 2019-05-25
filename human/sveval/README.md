@@ -8,10 +8,19 @@ To run the evaluation
 # activate toil-vg environment
 source toilvenv/bin/activate
 
+## evaluate each dataset
 snakemake -p hgsvc
 snakemake -p giab5
 snakemake -p svpop
 snakemake -p chmpd
+## or all 
+snakemake -p all
+
+## merge the TSV results
+Rscript mergeTSVs.R
+
+## compute size distribution of SVs in the input catalogs
+Rscript refsize.R tsv/human-ref-size.tsv HGSVC.haps.vcf.gz sv-pop-explicit.vcf.gz pseudo_diploid-explicit.vcf.gz giab-0.5.vcf.gz
 ```
 
 ## Data
