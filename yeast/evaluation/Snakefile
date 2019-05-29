@@ -6,8 +6,8 @@ configfile: "samples.yaml"
 
 rule all:
      input:
-        expand("results/assemblyeval_svonly/{version}.strains.{metric}.mean.png", version=["four", "all"], metric=["ids", "mapqs"]),
-        expand("results/assemblyeval_svonly/{version}.strains.{metric}.different.mean.png", version=["four", "all"], metric=["ids", "mapqs"])
+        expand("results/assemblyeval_svonly/plot.strains.{metric}.mean.png", metric=["ids", "mapqs"]),
+        expand("results/assemblyeval_svonly/plot.strains.{metric}.different.mean.png", metric=["ids", "mapqs"])
 
 
 ##############
@@ -275,9 +275,10 @@ rule cat_means_different:
 
 rule plot_mean_identities_and_mapqs:
     input:
-        "results/assemblyeval_svonly/{version}.strains.ids_and_mapqs.{mean}.tsv"
+        five = "results/assemblyeval_svonly/four.strains.ids_and_mapqs.{mean}.tsv",
+        all = "results/assemblyeval_svonly/all.strains.ids_and_mapqs.{mean}.tsv"
     output:
-        identities = "results/assemblyeval_svonly/{version}.strains.ids.{mean}.png",
-        mapqs = "results/assemblyeval_svonly/{version}.strains.mapqs.{mean}.png"
+        identities = "results/assemblyeval_svonly/plot.strains.ids.{mean}.png",
+        mapqs = "results/assemblyeval_svonly/plot.strains.mapqs.{mean}.png"
     shell:
-        "Rscript scripts/plot_mean_identities_and_mapqs.R {input} {output.identities} {output.mapqs}"
+        "Rscript scripts/plot_mean_identities_and_mapqs.R {input.five} {input.all} {output.identities} {output.mapqs}"
