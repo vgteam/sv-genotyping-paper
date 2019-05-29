@@ -6,7 +6,9 @@ configfile: "samples.yaml"
 
 rule all:
      input:
-        expand("results/assemblyeval/constructunion.{set}.reads.{metric}.png", set=["all", "four"], metric=["identity", "score", "mapq"])
+        expand("results/assemblyeval_svonly/{version}.strains.{metric}.mean.png", version=["four", "all"], metric=["ids", "mapqs"]),
+        expand("results/assemblyeval_svonly/{version}.strains.{metric}.different.mean.png", version=["four", "all"], metric=["ids", "mapqs"])
+
 
 ##############
 # CONVERSION #
@@ -23,11 +25,12 @@ rule tabix:
 
 rule fix_chromosomes:
     input:
-        lambda wildcards: "calls/{0}_{1}/vcf/{2}.{3}.{0}.{1}.vcf.gz".format(wildcards.graph, wildcards.version, config["samples"][wildcards.strainname], wildcards.options)
+        lambda wildcards: ["calls/{0}_{1}/vcf/{2}.{3}.{0}.{1}.vcf.gz".format(wildcards.graph, wildcards.version, config["samples"][wildcards.strainname], wildcards.options),
+                           "calls/{0}_{1}/vcf/{2}.{3}.{0}.{1}.vcf.gz.tbi".format(wildcards.graph, wildcards.version, config["samples"][wildcards.strainname], wildcards.options)]
     output:
         "calls/{graph}_{version}/vcf_processed/{strainname}.{options}.vcf.gz"
     shell:
-        "zcat {input} | sed 's/^S288C.//g' | bgzip -c > {output}"
+        "bcftools filter -e 'GT=\"0\" | GT=\"0/0\" | GT~\"\\.\" | ABS(STRLEN(REF) - STRLEN(ALT)) < 50' {input[0]} | sed 's/^S288C.//g' | bgzip -c > {output}"
 
 
 ##############
@@ -118,7 +121,7 @@ def get_reads(wildcards):
         return ["../illumina_reads/SRR4074255.fastq.gz"]
 
 
-rule map_reads:
+rule map_reads_to_sample_graph:
     input:
         reads=get_reads,
         xg="{strain}/assemblyeval/{graph}.{version}.{options}/graph.sample.xg",
@@ -134,107 +137,147 @@ rule map_reads:
         "vg map -d {params.graph_base} -t {threads} -f {input.reads} 2> {log} > {output}"
 
 
-rule collect_scores:
+rule map_reads_to_linear_graph:
     input:
-        "{strain}/assemblyeval/{graph}.{version}.{options}/graph.sample.{aligned}.gam"
+        reads=get_reads,
+        xg="empty_sample_graph/linear_graph.xg",
+        gcsa="empty_sample_graph/linear_graph.gcsa"
+    params:
+        graph_base="empty_sample_graph/linear_graph"
     output:
-        "{strain}/assemblyeval/{graph}.{version}.{options}/graph.sample.{aligned}.scores.txt"
+        "{strain}/assemblyeval/linear/graph.reads.gam"
+    threads: 10
+    log:
+        "{strain}/assemblyeval/linear/graph.alignreads.log"
     shell:
-        "vg view -aj {input} | jq '.score' | sed 's/null/0/' > {output}"
+        "vg map -d {params.graph_base} -t {threads} -f {input.reads} 2> {log} > {output}"
 
 
-rule collect_identities:
+rule collect_identities_from_sample_graphs:
     input:
-        "{strain}/assemblyeval/{graph}.{version}.{options}/graph.sample.{aligned}.gam"
+        "{strain}/assemblyeval/{graph}.{version}.{options}/graph.sample.reads.gam"
     output:
-        "{strain}/assemblyeval/{graph}.{version}.{options}/graph.sample.{aligned}.identities.txt"
+        "{strain}/assemblyeval/{graph}.{version}.{options}/graph.sample.reads.names_identities.tsv"
     shell:
-        "vg view -aj {input} | jq '.identity' | sed 's/null/0/' > {output}"
+        "vg view -aj {input} | jq -rc '[.name, if .identity == null then 0 else .identity end ] | @tsv' > {output}"
 
 
-rule collect_mapping_quality:
+rule collect_identities_from_linear_graph:
     input:
-        "{strain}/assemblyeval/{graph}.{version}.{options}/graph.sample.{aligned}.gam"
+        "{strain}/assemblyeval/linear/graph.reads.gam"
     output:
-        "{strain}/assemblyeval/{graph}.{version}.{options}/graph.sample.{aligned}.mapqs.txt"
+        "{strain}/assemblyeval/linear/graph.linear.reads.names_identities.tsv"
     shell:
-        "vg view -aj {input} | jq '.mapping_quality' | sed 's/null/0/' > {output}"
+        "vg view -aj {input} | jq -rc '[.name, if .identity == null then 0 else .identity end ] | @tsv' > {output}"
+
+
+rule collect_mapqs_from_sample_graphs:
+    input:
+        "{strain}/assemblyeval/{graph}.{version}.{options}/graph.sample.reads.gam"
+    output:
+        "{strain}/assemblyeval/{graph}.{version}.{options}/graph.sample.reads.names_mapqs.tsv"
+    shell:
+        "vg view -aj {input} | jq -rc '[.name, if .mapping_quality == null then 0 else .mapping_quality end ] | @tsv' > {output}"
+
+
+rule collect_mapqs_from_linear_graph:
+    input:
+        "{strain}/assemblyeval/linear/graph.reads.gam"
+    output:
+        "{strain}/assemblyeval/linear/graph.linear.reads.names_mapqs.tsv"
+    shell:
+        "vg view -aj {input} | jq -rc '[.name, if .mapping_quality == null then 0 else .mapping_quality end ] | @tsv' > {output}"
+
+
+rule sort_identities_or_mapqs:
+    input:
+        "{strain}/assemblyeval/{graph}/graph.{type}.reads.names_{metric}.tsv"
+    output:
+        "{strain}/assemblyeval/{graph}/graph.{type}.reads.names_{metric}.sorted.tsv"
+    shell:
+        "sort -k 1b,1 {input} > {output}"
+
+
+rule join_identities:
+    input:
+        cactus = "{strain}/assemblyeval/cactus.{version}.recall/graph.sample.reads.names_identities.sorted.tsv",
+        construct = "{strain}/assemblyeval/constructunion.{version}.recall/graph.sample.reads.names_identities.sorted.tsv",
+        linear = "{strain}/assemblyeval/linear/graph.linear.reads.names_identities.sorted.tsv"
+    output:
+        temp("results/assemblyeval_svonly/{strain}.{version}.joined.identities.tsv")
+    shell:
+        "join -j 1 -t $'\\t' {input.cactus} {input.construct} | join -j 1 -t $'\\t' - {input.linear} > {output}"
+
+
+rule join_mapqs:
+    input:
+        cactus = "{strain}/assemblyeval/cactus.{version}.recall/graph.sample.reads.names_mapqs.sorted.tsv",
+        construct = "{strain}/assemblyeval/constructunion.{version}.recall/graph.sample.reads.names_mapqs.sorted.tsv",
+        linear = "{strain}/assemblyeval/linear/graph.linear.reads.names_mapqs.sorted.tsv"
+    output:
+        temp("results/assemblyeval_svonly/{strain}.{version}.joined.mapqs.tsv")
+    shell:
+        "join -j 1 -t $'\\t' {input.cactus} {input.construct} | join -j 1 -t $'\\t' - {input.linear} > {output}"
+
+
+rule join_identities_and_mapqs:
+    input:
+        ids = "results/assemblyeval_svonly/{strain}.{version}.joined.identities.tsv",
+        mapqs = "results/assemblyeval_svonly/{strain}.{version}.joined.mapqs.tsv"
+    output:
+        "results/assemblyeval_svonly/{strain}.{version}.joined.ids_and_mapqs.tsv"
+    shell:
+        "join -j 1 -t $'\\t' {input.ids} {input.mapqs} > {output}"
+
+
+rule filter_different:
+    input:
+        "results/assemblyeval_svonly/{strain}.{version}.joined.ids_and_mapqs.tsv"
+    output:
+        "results/assemblyeval_svonly/{strain}.{version}.joined.ids_and_mapqs.different.tsv"
+    shell:
+        "awk '!($2 == $3 && $3 == $4 && $5 == $6 && $6 == $7)' {input} > {output}"
+
+
+rule cat_means_all:
+    input:
+        expand("results/assemblyeval_svonly/{strain}.{{version}}.joined.ids_and_mapqs.tsv", strain=STRAINS_ALL)
+    output:
+        "results/assemblyeval_svonly/{version}.strains.ids_and_mapqs.mean.tsv"
+    run:
+        shell("rm -f {output}")
+        for file in input:
+            strain = file.split("/")[2].split(".")[0]
+            shell("awk 'OFS=\"\\t\" {{ total_cactus_id += $2; total_vcf_id += $3; total_linear_id += $4; \
+                                       total_cactus_mapq += $5; total_vcf_mapq += $6; total_linear_mapq += $7; }} \
+                                       END {{ print \"{strain}\", total_cactus_id/NR, total_vcf_id/NR, total_linear_id/NR, \
+                                       total_cactus_mapq/NR, total_vcf_mapq/NR, total_linear_mapq/NR }}' {file} >> {output}")
+
+
+rule cat_means_different:
+    input:
+        expand("results/assemblyeval_svonly/{strain}.{{version}}.joined.ids_and_mapqs.different.tsv", strain=STRAINS_ALL)
+    output:
+        "results/assemblyeval_svonly/{version}.strains.ids_and_mapqs.different.mean.tsv"
+    run:
+        shell("rm -f {output}")
+        for file in input:
+            strain = file.split("/")[2].split(".")[0]
+            shell("awk 'OFS=\"\\t\" {{ total_cactus_id += $2; total_vcf_id += $3; total_linear_id += $4; \
+                                       total_cactus_mapq += $5; total_vcf_mapq += $6; total_linear_mapq += $7; }} \
+                                       END {{ print \"{strain}\", total_cactus_id/NR, total_vcf_id/NR, total_linear_id/NR, \
+                                       total_cactus_mapq/NR, total_vcf_mapq/NR, total_linear_mapq/NR }}' {file} >> {output}")
 
 
 ############
 # Plotting #
 ############
 
-rule cat_identities_assembly_eval:
+rule plot_mean_identities_and_mapqs:
     input:
-        construct=expand("{strain}/assemblyeval/{{constructgraph}}.{{version}}.norecall/graph.sample.{{aligned}}.identities.txt", strain=STRAINS_ALL),
-        cactus=expand("{strain}/assemblyeval/cactus.{{version}}.recall/graph.sample.{{aligned}}.identities.txt", strain=STRAINS_ALL)
+        "results/assemblyeval_svonly/{version}.strains.ids_and_mapqs.{mean}.tsv"
     output:
-        "results/assemblyeval/{constructgraph}.{version}.{aligned}.identity.tsv"
-    run:
-        shell("rm -f {output}")
-        for file in input.construct:
-            strain = file.split("/")[0]
-            shell("awk 'OFS=\"\\t\" {{ x+=$1 }} END {{ print \"construct\", \"{strain}\", x/NR }}' {file} >> {output}")
-        for file in input.cactus:
-            strain = file.split("/")[0]
-            shell("awk 'OFS=\"\\t\" {{ x+=$1 }} END {{ print \"cactus\", \"{strain}\", x/NR }}' {file} >> {output}")
-
-
-rule cat_scores_assembly_eval:
-    input:
-        construct=expand("{strain}/assemblyeval/{{constructgraph}}.{{version}}.norecall/graph.sample.{{aligned}}.scores.txt", strain=STRAINS_ALL),
-        cactus=expand("{strain}/assemblyeval/cactus.{{version}}.recall/graph.sample.{{aligned}}.scores.txt", strain=STRAINS_ALL)
-    output:
-        "results/assemblyeval/{constructgraph}.{version}.{aligned}.score.tsv"
-    run:
-        shell("rm -f {output}")
-        for file in input.construct:
-            strain = file.split("/")[0]
-            shell("awk 'OFS=\"\\t\" {{ x+=$1 }} END {{ print \"construct\", \"{strain}\", x/NR }}' {file} >> {output}")
-        for file in input.cactus:
-            strain = file.split("/")[0]
-            shell("awk 'OFS=\"\\t\" {{ x+=$1 }} END {{ print \"cactus\", \"{strain}\", x/NR }}' {file} >> {output}")
-
-
-rule cat_mapqs_assembly_eval:
-    input:
-        construct=expand("{strain}/assemblyeval/{{constructgraph}}.{{version}}.norecall/graph.sample.{{aligned}}.mapqs.txt", strain=STRAINS_ALL),
-        cactus=expand("{strain}/assemblyeval/cactus.{{version}}.recall/graph.sample.{{aligned}}.mapqs.txt", strain=STRAINS_ALL)
-    output:
-        "results/assemblyeval/{constructgraph}.{version}.{aligned}.mapq.tsv"
-    run:
-        shell("rm -f {output}")
-        for file in input.construct:
-            strain = file.split("/")[0]
-            shell("awk 'OFS=\"\\t\" {{ x+=$1 }} END {{ print \"construct\", \"{strain}\", x/NR }}' {file} >> {output}")
-        for file in input.cactus:
-            strain = file.split("/")[0]
-            shell("awk 'OFS=\"\\t\" {{ x+=$1 }} END {{ print \"cactus\", \"{strain}\", x/NR }}' {file} >> {output}")
-
-
-rule plot_identity:
-    input:
-        "results/{gold}/{constructgraph}.{version}.{aligned}.identity.tsv"
-    output:
-        "results/{gold}/{constructgraph}.{version}.{aligned}.identity.png"
+        identities = "results/assemblyeval_svonly/{version}.strains.ids.{mean}.png",
+        mapqs = "results/assemblyeval_svonly/{version}.strains.mapqs.{mean}.png"
     shell:
-        "Rscript scripts/plot_identities.R {input} {output}"
-
-
-rule plot_scores:
-    input:
-        "results/{gold}/{constructgraph}.{version}.{aligned}.score.tsv"
-    output:
-        "results/{gold}/{constructgraph}.{version}.{aligned}.score.png"
-    shell:
-        "Rscript scripts/plot_scores.R {input} {output}"
-
-
-rule plot_mapq:
-    input:
-        "results/{gold}/{constructgraph}.{version}.{aligned}.mapq.tsv"
-    output:
-        "results/{gold}/{constructgraph}.{version}.{aligned}.mapq.png"
-    shell:
-        "Rscript scripts/plot_mapqs.R {input} {output}"
+        "Rscript scripts/plot_mean_identities_and_mapqs.R {input} {output.identities} {output.mapqs}"
