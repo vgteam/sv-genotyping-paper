@@ -3,7 +3,7 @@ source toilvenv/bin/activate
 ssh-add
 
 #Create leader node
-yeast_sv/vg_call/create-ec2-leader.sh vgtoil <KEYPAIRNAME>
+vg_call/create-ec2-leader.sh vgtoil <KEYPAIRNAME>
 
 #Move graph, alignment GAMs and bash script to leader node
 toil rsync-cluster -z us-west-2a vgtoil -avP graphs/constructunion_all/AWS/callmultiple.sh :/

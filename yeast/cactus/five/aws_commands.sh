@@ -6,7 +6,7 @@ ssh-add
 toil launch-cluster -z us-west-2a cactus --keyPairName <KEYPAIRNAME> --leaderNodeType t2.medium
 
 #Copy repeat-masked assemblies and seqfile onto leader node
-toil rsync-cluster -z us-west-2a cactus -avP yeast/cactus/four/seqfile_yeast.txt yeast/assemblies/assemblies_repeatmasked/CBS432.genome.fa.masked yeast/assemblies/assemblies_repeatmasked/S288C.genome.fa.masked yeast/assemblies/assemblies_repeatmasked/SK1.genome.fa.masked yeast/assemblies/assemblies_repeatmasked/UFRJ50816.genome.fa.masked yeast/assemblies/assemblies_repeatmasked/YPS128.genome.fa.masked :/
+toil rsync-cluster -z us-west-2a cactus -avP yeast/cactus/five/seqfile_yeast.txt yeast/assemblies/assemblies_repeatmasked/CBS432.genome.fa.masked yeast/assemblies/assemblies_repeatmasked/S288C.genome.fa.masked yeast/assemblies/assemblies_repeatmasked/SK1.genome.fa.masked yeast/assemblies/assemblies_repeatmasked/UFRJ50816.genome.fa.masked yeast/assemblies/assemblies_repeatmasked/YPS128.genome.fa.masked :/
 
 #Connect to leader node
 toil ssh-cluster -z us-west-2a cactus
@@ -25,6 +25,6 @@ cactus --nodeTypes c5.4xlarge:0.4,r4.2xlarge --minNodes 0,0 --maxNodes 1,1 --pro
 #Disconnect from leader node
 
 #Copy cactus alignment result from leader node to the vg mapping pipeline directory
-toil rsync-cluster -z us-west-2a cactus -avP :/cactusoutput.hal yeast/graphs/cactus_four/
+toil rsync-cluster -z us-west-2a cactus -avP :/cactusoutput.hal yeast/graphs/cactus_five/
 #Destroy cluster
 toil destroy-cluster -z us-west-2a cactus

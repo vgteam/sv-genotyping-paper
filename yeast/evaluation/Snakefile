@@ -275,7 +275,7 @@ rule cat_means_different:
 
 rule plot_mean_identities_and_mapqs:
     input:
-        five = "results/assemblyeval_svonly/four.strains.ids_and_mapqs.{mean}.tsv",
+        five = "results/assemblyeval_svonly/five.strains.ids_and_mapqs.{mean}.tsv",
         all = "results/assemblyeval_svonly/all.strains.ids_and_mapqs.{mean}.tsv"
     output:
         identities = "results/assemblyeval_svonly/plot.strains.ids.{mean}.png",

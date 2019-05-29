@@ -20,7 +20,7 @@ SAMPLES_FOUR=["UFRJ50816", "YPS128", "CBS432", "SK1"]
 rule all:
     input:
         expand("SV/unions/union.{sample}.vcf", sample=SAMPLES_ALL_BUT_S288C),
-        expand("SV/unions/merged/union.{subset}.vcf", subset=["all", "four"])
+        expand("SV/unions/merged/union.{subset}.vcf", subset=["all", "five"])
 
 
 ###########
@@ -238,11 +238,11 @@ rule merge_strains_all:
         shell(command + " | sort -k1,1V -k2,2n -k3,3n -k6,6 -k7,7 -u > {output}")
 
 
-rule merge_strains_four:
+rule merge_strains_five:
     input:
         calls=expand("SV/{subdir}/{prefix}.{sample}.{type}.bed", sample=SAMPLES_FOUR, type=["{type}"], subdir=["{subdir}"], prefix=["{prefix}"])
     output:
-        "SV/{subdir}/merged/{prefix}.four.{type}.bed"
+        "SV/{subdir}/merged/{prefix}.five.{type}.bed"
     run:
         command = "cat {input.calls[0]}"
         already_added = "{input.calls[0]}"

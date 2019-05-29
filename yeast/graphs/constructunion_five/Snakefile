@@ -16,102 +16,50 @@ SAMPLES=["SRR4074413", "SRR4074412", "SRR4074411", "SRR4074394", "SRR4074385", "
 rule all:
     input:
         expand("mappings/{sample}.mapped.sorted.gam", sample=SAMPLES),
-        "exploded/component0.xg",
-        "mappings/stats/constructunion_four.mapq.png",
-        "mappings/stats/constructunion_four.identity.png"
+        "mappings/stats/all.tsv"
 
 
-rule hal2vg:
+rule construct_graph:
     input:
-        "cactusoutput.hal"
+        fasta="../../assemblies/assemblies_raw/S288C.genome.fa",
+        vcf="../../assemblies/SV/unions/merged/union.five.vcf"
     output:
-        "yeast.vg"
+        vg="construct.vg"
     shell:
-        "~/bin/hal2vg_fork/hal2vg --noAncestors --refGenome S288C {input} > {output}"
+        "vg construct -r {input.fasta} -v {input.vcf} -S -a -f -p > {output}"
 
 
 rule split_nodes:
     input:
-        "yeast.vg"
+        "construct.vg"
     output:
-        "yeast.chop32.vg"
+        "construct.chop32.vg"
     shell:
         "vg mod -X 32 {input} > {output}"
 
 
-rule explode_graph:
+rule index_gcsa:
     input:
-        "yeast.chop32.vg"
+        "construct.chop32.vg"
     output:
-        "exploded/component0.vg"
+        "construct.gcsa"
     shell:
-        "vg explode {input} exploded/"
+        "vg index -g {output} -k 11 -p -b temp {input}"
 
 
-rule create_gbwt:
+rule index_xg:
     input:
-        "exploded/component0.vg"
+        "construct.chop32.vg"
     output:
-        gbwt="yeast.final.gbwt",
-        threadnames="thread_names"
+        "construct.xg"
     shell:
-        "vg index -T -G {output.gbwt} -F {output.threadnames} {input}"
-
-
-rule remove_paths:
-    input:
-        "exploded/component0.vg"
-    output:
-        "yeast.final.vg"
-    shell:
-        "vg mod -D {input} > {output}"
-
-
-rule create_xg:
-    input:
-        vg="yeast.final.vg",
-        threadnames="thread_names"
-    output:
-        xg="yeast.final.xg"
-    shell:
-        "vg index -x {output.xg} -F {input.threadnames} {input.vg}"
-
-
-rule create_xg_with_paths:
-    input:
-        vg="exploded/component0.vg",
-        threadnames="thread_names"
-    output:
-        "exploded/component0.xg"
-    shell:
-        "vg index -x {output} -F {input.threadnames} {input.vg}"
-
-
-rule prune_graph:
-    input:
-        gbwt="yeast.final.gbwt",
-        vg="yeast.final.vg"
-    output:
-        node_mapping="node_mapping",
-        graph="yeast.final.pruned.vg"
-    shell:
-        "vg prune -u -g {input.gbwt} -m {output.node_mapping} {input.vg} > {output.graph}"
-
-
-rule create_gcsa:
-    input:
-        node_mapping="node_mapping",
-        graph="yeast.final.pruned.vg"
-    output:
-        "yeast.final.gcsa"
-    shell:
-        "vg index -g {output} -f {input.node_mapping} -b temp {input.graph}"
+        "vg index -x {output} {input}"
 
 
 rule map_reads:
     input:
-        xg="yeast.final.xg",
-        gcsa="yeast.final.gcsa",
+        xg="construct.xg",
+        gcsa="construct.gcsa",
         reads="../../illumina_reads/{sample}.fastq.gz"
     output:
         "mappings/{sample}.mapped.gam"
@@ -149,28 +97,8 @@ rule cat_counts:
         for f in input.stats:
             sample = f.split("/")[2].split(".")[0]
             shell("cat {f} | tr '\\n' '\\t' >> {output}")
-            shell("echo -e -n \"cactus\\t\" >> {output}")
+            shell("echo -e -n \"construct\\t\" >> {output}")
             shell("grep {sample} {input.samples} | awk '{{ print $3}}' >> {output}")
-
-
-rule plot_mapping_quality:
-    input:
-        cactus="mappings/stats/all.tsv",
-        construct="../{constructgraph}_four/mappings/stats/all.tsv"
-    output:
-        "mappings/stats/{constructgraph}_four.mapq.png"
-    shell:
-        "Rscript scripts/plot_mapping_quality.R {input.construct} {input.cactus} {output}"
-
-
-rule plot_identity:
-    input:
-        cactus="mappings/stats/all.tsv",
-        construct="../{constructgraph}_four/mappings/stats/all.tsv"
-    output:
-        "mappings/stats/{constructgraph}_four.identity.png"
-    shell:
-        "Rscript scripts/plot_identity.R {input.construct} {input.cactus} {output}"
 
 
 rule sort_gam:
@@ -179,6 +107,6 @@ rule sort_gam:
     output:
         sorted="mappings/{sample}.mapped.sorted.gam",
         gai="mappings/{sample}.mapped.sorted.gam.gai"
-    threads: 2
+    threads: 10
     shell:
         "vg gamsort -t {threads} -i {output.gai} {input} > {output.sorted}"

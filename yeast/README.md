@@ -36,21 +36,21 @@ snakemake
 
 There are 2 different subdirectories for the VCF graph in `yeast/graphs`:
 - `yeast/graphs/constructunion_all` - Integrate variants from all strains into graph
-- `yeast/graphs/constructunion_four` - Integrate variants from 3 S. cerevisiae and 2 S. paradoxus strains into the graph
+- `yeast/graphs/constructunion_five` - Integrate variants from 3 S. cerevisiae and 2 S. paradoxus strains into the graph
 
-Let's call them the two sample sets. For the first sample set (`all`), run:
+Let's call them the two strain sets. For the first strain set (`all`), run:
 ```
 cd yeast/graphs/constructunion_all
 snakemake
 ```
 
-For the second sample set (`four`), run:
+For the second strain set (`five`), run:
 ```
-cd yeast/graphs/constructunion_four
+cd yeast/graphs/constructunion_five
 snakemake
 ```
 
-This will create the VCF graphs for the two sample sets using S288C as reference strain and the high-sensitivity variant callsets produced before. 
+This will create the VCF graphs for the two strain sets using S288C as reference strain and the high-sensitivity variant callsets produced before. 
 
 As a result `yeast/graphs/constructunion_*/mappings` will contain the sorted GAM alignments of the Illumina reads against the graph.
 
@@ -66,7 +66,7 @@ source cactus_env/bin/activate
 pip install --upgrade toil
 ```
 
-Like for the VCF graph, there are 2 different sample sets for the cactus graph: `all` and `four`. To create cactus graphs for both of them, now follow the steps in `yeast/cactus/all/aws_commands.sh` and `yeast/cactus/four/aws_commands.sh`.
+Like for the VCF graph, there are 2 different strain sets for the cactus graph: `all` and `five`. To create cactus graphs for both of them, now follow the steps in `yeast/cactus/all/aws_commands.sh` and `yeast/cactus/five/aws_commands.sh`.
 
 
 ## 5. Create, index and map Illumina reads to the cactus graph
@@ -77,7 +77,7 @@ snakemake
 ```
 
 ```
-cd yeast/graphs/cactus_four
+cd yeast/graphs/cactus_five
 snakemake
 ```
 
@@ -99,15 +99,15 @@ pip install toil[aws,mesos]==3.18.0
 pip install toil-vg
 ```
 
-For the VCF graph, follow the steps in `yeast/vg_call/graphA_aws_commands.sh`. It contains commands for the `all` sample set but can be easily modified for the `four` sample set.
-For the cactus graph, follow the steps in `yeast/vg_call/graphB_aws_commands.sh`. It contains commands for the `all` sample set but can be easily modified for the `four` sample set.
+For the VCF graph, follow the steps in `yeast/vg_call/graphA_aws_commands.sh`. It contains commands for the `all` strain set but can be easily modified for the `five` strain set.
+For the cactus graph, follow the steps in `yeast/vg_call/graphB_aws_commands.sh`. It contains commands for the `all` strain set but can be easily modified for the `five` strain set.
 
-The compressed vcf results are written into an outstore on S3 of the form `aws:us-west-2:vgcall-yeast-<graph>-<sample-set>-outstore`
+The compressed vcf results are written into an outstore on S3 of the form `aws:us-west-2:vgcall-yeast-<graph>-<strain-set>-outstore`
 
 
 ## 7. Evaluate genotyping performance
 
-To evaluate the SV genotype calls made by `vg call` you need to download them from the S3 outstore to the respective local directory `yeast/evaluation/calls/<graph>_<sample-set>/vcf`. This can be done via the S3 web interface or commands of the form `aws s3 cp s3://vgcall-yeast-<graph>-<sample-set>-outstore/<sample>*.vcf.gz yeast/evaluation/calls/<graph>_<sample-set>/vcf`.
+To evaluate the SV genotype calls made by `vg call` you need to download them from the S3 outstore to the respective local directory `yeast/evaluation/calls/<graph>_<strain-set>/vcf`. This can be done via the S3 web interface or commands of the form `aws s3 cp s3://vgcall-yeast-<graph>-<strain-set>-outstore/<sample>*.vcf.gz yeast/evaluation/calls/<graph>_<strain-set>/vcf`.
 
 Now, the evaluation pipeline can be started with:
 ```
@@ -116,4 +116,4 @@ cd yeast/evaluation/
 snakemake
 ```
 
-It will produce pdf plots showing recall, precision and F1 in `yeast/evaluation/results/assemblyeval`.
+It will produce pdf plots showing average deltas in mapping identity and mapping quality of reads aligned to the sample graphs in `yeast/evaluation/results/assemblyeval_svonly`.
