@@ -5,6 +5,6 @@ for i in "${arr[@]}"
 do
     echo "$i"
     MASTER_IP=`ifconfig eth0 |grep "inet addr" |awk '{print $2}' |awk -F: '{print $2}'`
-    toil clean aws:us-west-2:vgcall-yeast-constructunion-four-jobstore2
-    toil-vg call --realTimeLogging --realTimeStderr --whole_genome_config --nodeTypes r3.8xlarge:0.53 --maxNodes 20 --defaultPreemptable --provisioner aws --batchSystem mesos --mesosMaster=${MASTER_IP}:5050 --metrics aws:us-west-2:vgcall-yeast-constructunion-four-jobstore2 construct.xg $i.norecall.constructunion.four aws:us-west-2:vgcall-yeast-constructunion-four-outstore --gams $i.mapped.sorted.gam --call_chunk_size 0 --chroms chrI chrII chrIII chrIV chrV chrVI chrVII chrVIII chrIX chrX chrXI chrXII chrXIII chrXIV chrXV chrXVI 2> $i.norecall.constructunion.four.log
+    toil clean aws:us-west-2:vgcall-yeast-constructunion-four-jobstore
+    toil-vg call --realTimeLogging --realTimeStderr --whole_genome_config --nodeTypes r3.8xlarge:0.53 --maxNodes 20 --defaultPreemptable --provisioner aws --batchSystem mesos --mesosMaster=${MASTER_IP}:5050 --metrics aws:us-west-2:vgcall-yeast-constructunion-four-jobstore construct.xg $i.recall.constructunion.four aws:us-west-2:vgcall-yeast-constructunion-four-outstore --gams $i.mapped.sorted.gam --recall --call_chunk_size 0 --chroms chrI chrII chrIII chrIV chrV chrVI chrVII chrVIII chrIX chrX chrXI chrXII chrXIII chrXIV chrXV chrXVI 2> $i.recall.constructunion.four.log
 done
