@@ -1,6 +1,7 @@
-# Genotyping structural variation in variation graphs with the vg toolkit
+# Genotyping structural variants in pangenome graphs using the vg toolkit
 
-This repository contains the commands and scripts used for *Genotyping structural variation in variation graphs with the vg toolkit, 2019, in press*.
+
+This repository contains the commands and scripts used for *Genotyping structural variants in pangenome graphs using the vg toolkit, 2019, in press*.
 They are primarily dependent on [toil-vg](https://github.com/vgteam/toil-vg), which can run most other dependencies via Docker.  There is a [WIKI here](https://github.com/vgteam/toil-vg/wiki/Genotyping-Structural-Variants) for genotyping SVs with toil-vg. [Github issues](https://github.com/vgteam/sv-genotyping-paper/issues/new) is the best place to raise questions or concerns.
 
 Links to necessary data are also listed for each analysis.
