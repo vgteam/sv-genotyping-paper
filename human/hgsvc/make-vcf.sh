@@ -14,7 +14,7 @@ do
 	 echo "Making diploid VCF for ${SAMPLE}"
 	 #	 ./hap-merge.py ${SAMPLE}.hap0.vcf.gz ${SAMPLE}.hap1.vcf.gz | vcfuniq | vcfkeepinfo - NA | vcffixup - | bcftools norm - -f hg38.fa.gz --multiallelic +both | vcfuniq | bgzip > HGSVC.${SAMPLE}.vcf.gz
 	 # This is the line used for the analysis for the paper.  If repeating, the above would be preferred to have a slightly cleaner VCF (it adds bcftools norm)
-	 ./hap-merge.py ${SAMPLE}.hap0.vcf.gz ${SAMPLE}.hap1.vcf.gz | vcfuniq | vcfkeepinfo - NA | vcffixup - | vcfuniq | bgzip > HGSVC.${SAMPLE}.vcf.gz
+	 ./hap-merge.py ${SAMPLE}.hap0.vcf.gz ${SAMPLE}.hap1.vcf.gz | sed 's/HG005733/HG00533/g' | vcfuniq | vcfkeepinfo - NA | vcffixup - | vcfuniq | bgzip > HGSVC.${SAMPLE}.vcf.gz
 	 tabix -f -p vcf HGSVC.${SAMPLE}.vcf.gz
 done
 
