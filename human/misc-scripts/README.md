@@ -7,14 +7,19 @@ Common prefixes/suffixes in the REF and ALT sequences are removed.
 #### `addMissingPaddingHg37.py`
 
 Simple script to add padding sequence when needed. 
-Used to avoid Paragraph throwing errors on the GIAB VCF file.
+Used to avoid Paragraph throwing errors on the GIAB VCF file (see [../giab](../giab)).
 The path to the reference path is hard-coded.
 
 #### `addMissingPaddingHg38.py`
 
 Simple script to add padding sequence when needed. 
-Used to avoid Paragraph throwing errors on the SVPOP VCF file.
+Used to avoid Paragraph throwing errors on the SVPOP VCF file (see [../svpop](../svpop)).
 The path to the reference path is hard-coded.
+
+#### `selectSample.py`
+
+Script to either select one sample from a VCF containing multiple samples, or replace the sample name (in a VCF containing only one sample).
+This script helps reformatting the VCF before evaluation against a truth set (see [../sveval](../sveval)).
 
 #### Scripts from the BayesTyper tool
 

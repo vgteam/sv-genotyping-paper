@@ -51,28 +51,69 @@ Those VCFs are also available at [https://s3-us-west-2.amazonaws.com/human-pange
 
 Before evaluation, some VCF files were reformatted or renamed.
 
-Notably, some methods don't output only the genotyped samples but also other samples from the truth sets with "./.". 
+Notably, some methods outputs the genotypes of all samples in one VCF.
+Others sometimes output only the genotyped sample but keeps the other samples from the truth sets (and fill genotypes with "./."). 
 These samples disturbed the pipeline, especially variant normalization.
-We used the XXX script to select the appropriate sample in the output of several methods.
+The way we ran some of the tools resulted in some VCF having the filename of the BAM file as sample name and we want to replace them with the actual sample name.
+We used the [selectSample.py](../misc-scripts/selectSample.py) script to select the appropriate sample or rename the sample in the output VCF of several methods.
+
 
 ### BayesTyper
 
-BayesTyper outputs gzipped VCFs. 
-Before evaluation, they were bgzipped.
-
-For HGSVC, the VCF contains genotypes for the three samples so we create links with appropriate file names that match the Snakemake file.
-
 ```
-cd vcf
-
 # HGSVC
 zcat HG00514_sim30x_hgsvc_pp_bayestyper_pass_nomis.vcf.gz | bgzip > hgsvcsim-bayestyper-HG00514.vcf.gz
-zcat all_hgsvc_pp49_hc49_bayestyper_pass_hgsvc.vcf.gz | bgzip > hgsvc-bayestyper-HG00514.vcf.gz
-ln -s hgsvc-bayestyper-HG00514.vcf.gz hgsvc-bayestyper-HG00733.vcf.gz
-ln -s hgsvc-bayestyper-HG00514.vcf.gz hgsvc-bayestyper-NA19240.vcf.gz
+zcat all_hgsvc_pp49_hc49_bayestyper_pass_hgsvc.vcf.gz | bgzip > vcf/hgsvc-bayestyper-HG00514-HG00733-NA19240.vcf.gz
+python ../misc-scripts/selectSample.py -s HG00514 -v vcf/hgsvc-bayestyper-HG00514-HG00733-NA19240.vcf.gz | bgzip > vcf/hgsvc-bayestyper-HG00514.vcf.gz
+python ../misc-scripts/selectSample.py -s HG00733 -v vcf/hgsvc-bayestyper-HG00514-HG00733-NA19240.vcf.gz | bgzip > vcf/hgsvc-bayestyper-HG00733.vcf.gz
+python ../misc-scripts/selectSample.py -s NA19240 -v vcf/hgsvc-bayestyper-HG00514-HG00733-NA19240.vcf.gz | bgzip > vcf/hgsvc-bayestyper-NA19240.vcf.gz
 
 # GIAB
 zcat giab_AJ_sv_HG002_all19_pass_giab.vcf.gz | bgzip > vcf/giab5-bayestyper-HG002.vcf.gz
+```
+
+### Delly
+
+```
+## HGSVC
+python ../misc-scripts/selectSample.py -s HG00514 -v HG00514_sim30x.delly.vcf.gz | bgzip > vcf/hgsvcsim-delly-HG00514.vcf.gz
+python ../misc-scripts/selectSample.py -s HG00514 -v ERR903030.delly.vcf.gz | bgzip > vcf/hgsvc-delly-HG00514.vcf.gz
+python ../misc-scripts/selectSample.py -s HG00733 -v HG00733.delly.vcf.gz | bgzip > vcf/hgsvc-delly-HG00733.vcf.gz
+python ../misc-scripts/selectSample.py -s NA19240 -v NA19240.delly.vcf.gz | bgzip > vcf/hgsvc-delly-NA19240.vcf.gz
+
+## GIAB
+python ../misc-scripts/selectSample.py -s HG002 -v HG002-giab-0.5.delly.vcf.gz | bgzip > vcf/giab5-delly-HG002.vcf.gz
+```
+
+## SVTyper
+
+```
+## HGSVC
+python ../misc-scripts/selectSample.py -s HG00514 -v HG00514_sim30x.svtyper.explicit.vcf.gz | bgzip > vcf/hgsvcsim-svtyper-HG00514.vcf.gz
+python ../misc-scripts/selectSample.py -s HG00514 -v HG00514.svtyper.explicit.vcf.gz | bgzip > vcf/hgsvc-svtyper-HG00514.vcf.gz
+python ../misc-scripts/selectSample.py -s HG00733 -v HG00733.svtyper.explicit.vcf.gz | bgzip > vcf/hgsvc-svtyper-HG00733.vcf.gz
+python ../misc-scripts/selectSample.py -s NA19240 -v NA19240.svtyper.explicit.vcf.gz | bgzip > vcf/hgsvc-svtyper-NA19240.vcf.gz
+
+## GIAB
+python ../misc-scripts/selectSample.py -s HG002 -v ../svtyper/HG002/HG002.svtyper.explicit.vcf.gz | bgzip > vcf/giab5-svtyper-HG002.vcf.gz
+```
+
+## Paragraph
+
+```
+## HGSVC
+python ../misc-scripts/selectSample.py -s HG00514 -v HG00514_sim30x/paragraph_out/genotypes.vcf.gz | bgzip > vcf/hgsvcsim-paragraph-HG00514.vcf.gz
+python ../misc-scripts/selectSample.py -s HG00514 -v HG00514/paragraph_out/genotypes.vcf.gz | bgzip > vcf/hgsvc-paragraph-HG00514.vcf.gz
+python ../misc-scripts/selectSample.py -s HG00733 -v HG00733/paragraph_out/genotypes.vcf.gz | bgzip > vcf/hgsvc-paragraph-HG00733.vcf.gz
+python ../misc-scripts/selectSample.py -s NA19240 -v NA19240/paragraph_out/genotypes.vcf.gz | bgzip > vcf/hgsvc-paragraph-NA19240.vcf.gz
+
+## GIAB
+vcf-sort ../paragraph/HG002/paragraph_out/genotypes.vcf.gz | vcfkeepsamples - HG002 | bgzip -c > vcf/giab5-paragraph-HG002.vcf.gz
+
+## SVPOP
+python ../misc-scripts/selectSample.py -s HG00514 -v HG00514/paragraph_out/genotypes.vcf.gz | bgzip > vcf/svpop-paragraph-HG00514.vcf.gz
+python ../misc-scripts/selectSample.py -s HG00733 -v HG00733/paragraph_out/genotypes.vcf.gz | bgzip > vcf/svpop-paragraph-HG00733.vcf.gz
+python ../misc-scripts/selectSample.py -s NA19240 -v NA19240/paragraph_out/genotypes.vcf.gz | bgzip > vcf/svpop-paragraph-NA19240.vcf.gz
 ```
 
 ### SMRT-SV2
@@ -84,9 +125,9 @@ We used explicit VCFs to allow for normalization with `bcftools norm`.
 The VCF for SVPOP contains genotypes for multiple samples so we create links with appropriate file names that match the Snakemake file.
 
 ```
-cd vcf
-zgrep -v "##INFO=<ID=SVTYPE" svpop-smrtsv-hgsvc-explicit.vcf.gz | grep -v "##INFO=<ID=END" | bgzip > temp.vcf.gz
-mv temp.vcf.gz svpop-smrtsv-HG00514.vcf.gz
-ln -s svpop-smrtsv-HG00514.vcf.gz vcf/svpop-smrtsv-HG00733.vcf.gz
-ln -s svpop-smrtsv-HG00514.vcf.gz vcf/svpop-smrtsv-NA19240.vcf.gz
+## SVPOP
+zgrep -v "##INFO=<ID=SVTYPE" svpop-smrtsv-hgsvc-explicit.vcf.gz | grep -v "##INFO=<ID=END" | bgzip > svpop-smrtsv-HG00514-HG00733-NA19240.vcf.gztemp.vcf.gz
+python ../misc-scripts/selectSample.py -s HG00514 -v svpop-smrtsv-HG00514-HG00733-NA19240.vcf.gz | bgzip > vcf/svpop-smrtsv-HG00514.vcf.gz
+python ../misc-scripts/selectSample.py -s HG00733 -v svpop-smrtsv-HG00514-HG00733-NA19240.vcf.gz | bgzip > vcf/svpop-smrtsv-HG00733.vcf.gz
+python ../misc-scripts/selectSample.py -s NA19240 -v svpop-smrtsv-HG00514-HG00733-NA19240.vcf.gz | bgzip > vcf/svpop-smrtsv-NA19240.vcf.gz
 ```
