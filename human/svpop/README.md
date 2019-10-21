@@ -49,6 +49,12 @@ rm -rf ./svpop-vg-NA19240.vcf.gz ; aws s3 sync s3://${OUTSTORE}/SVPOP-jan10/call
 
 ## Paragraph
 
+Padding sequence was added when needed to avoid errors:
+
+```
+zcat sv-pop-explicit.vcf.gz | python ../misc-scripts/addMissingPaddingHg38.py | bgzip -c > sv-pop-explicit-padded.vcf.gz
+```
+
 Each sample was genotyped individually.
 For example for HG00514:
 
