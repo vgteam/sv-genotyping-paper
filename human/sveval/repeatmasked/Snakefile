@@ -1,0 +1,19 @@
+rule all:
+    input:
+        '../vcf/hgsvc-vg-HG00514.norm.rmsk.vcf.gz',
+        '../vcf/hgsvc-truth-baseline.norm.rmsk.vcf.gz'
+
+rule annotate:
+    input:
+        vcf="../vcf/{exp}-{method}-{sample}.norm.vcf.gz",
+    output:
+        "../vcf/{exp}-{method}-{sample}.norm.rmsk.vcf.gz"
+    threads:
+        20
+    run:
+        LABEL='rmsk-{}-{}-{}'.format(wildcards.exp, wildcards.method, wildcards.sample)
+        shell('gunzip -c {input} > {LABEL}.in.vcf')
+        shell('python3 rmskAnnotateVcf.py -i {LABEL}.in.vcf -o {LABEL}.out.vcf -t {threads}')
+        shell('cat {LABEL}.out.vcf | bgzip > {output}')
+        shell("aws s3 cp {output} {SROOT}/{output}")
+

@@ -68,6 +68,18 @@ picard MarkDuplicates I=ERR894724_bwa_mem_sort_rg.bam O=ERR894724_bwa_mem_sort_r
 rm ERR894724_bwa_mem_sort_rg.*
 ```
 
+## Paragraph
+
+Each sample was genotyped individually.
+For example for HG00514:
+
+```
+echo -e "id\tpath\tdepth\tread length\nHG00514\tHG00514.bam\t30\t150" > samples_for_paragraph_HG00514.txt
+multigrmpy.py -m samples_for_paragraph_HG00514.txt -i HGSVC.haps.vcf.gz -r hg38.fa -t 10 -o paragraph_out_HG00514
+```
+
+The output genotypes are in `paragraph_out_HG00514/genotypes.vcf.gz`.
+
 ## Delly
 
 Each sample was genotyped individually.

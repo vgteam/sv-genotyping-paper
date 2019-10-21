@@ -35,6 +35,15 @@ Using the helper scripts from `../toil-scripts`.
 rm -rf ./giab5-vg-HG002.vcf.gz ; aws s3 sync s3://${OUTSTORE}/GIAB-0.5-FEB26/GIAB/call-HG002/HG002.vcf.gz ./giab5-vg-HG002.vcf.gz
 ```
 
+## Paragraph
+
+```
+echo -e "id\tpath\tdepth\tread length\nHG002\tHG002.bam\t30\t150" > samples_for_paragraph_HG002.txt
+multigrmpy.py -m samples_for_paragraph_HG002.txt -i giab-0.5.vcf.gz -r hs37d5.fa -t 10 -o paragraph_out_HG002
+```
+
+The output genotypes are in `paragraph_out_HG002/genotypes.vcf.gz`.
+
 ## Delly
 
 ```

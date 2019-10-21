@@ -47,6 +47,18 @@ rm -rf ./svpop-vg-HG00733.vcf.gz ; aws s3 sync s3://${OUTSTORE}/SVPOP-jan10/call
 rm -rf ./svpop-vg-NA19240.vcf.gz ; aws s3 sync s3://${OUTSTORE}/SVPOP-jan10/call-NA19240/NA19240.vcf.gz ./svpop-vg-NA19240.vcf.gz
 ```
 
+## Paragraph
+
+Each sample was genotyped individually.
+For example for HG00514:
+
+```
+echo -e "id\tpath\tdepth\tread length\nHG00514\tHG00514.bam\t30\t150" > samples_for_paragraph_HG00514.txt
+multigrmpy.py -m samples_for_paragraph_HG00514.txt -i sv-pop-explicit-padded.vcf.gz -r hg38.fa -t 10 -o paragraph_out_HG00514
+```
+
+The output genotypes are in `paragraph_out_HG00514/genotypes.vcf.gz`.
+
 ## SMRT-SV v2
 
 SMRT-SV was obtained from [github](https://github.com/EichlerLab/smrtsv2) using commit 43d28cbd4e76ed2a4e820ded11a80592675db6c9 (the then-current master branch).

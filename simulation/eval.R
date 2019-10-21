@@ -30,8 +30,7 @@ if(!file.exists('vcfs.RData') | !CACHE){
   ## Read each call set and create a list of GRanges
   covs = list.files('.', 'cov')
   graphs = c('calls', 'truth')
-  ## methods = c('call', 'recall', 'toilvg', 'svtyper', 'delly')
-  methods = c('toilvg', 'svtyper', 'delly', 'bayestyper')
+  methods = c('toilvg', 'svtyper', 'delly', 'bayestyper', 'paragraph')
   calls = lapply(covs, function(cov){
     lapply(samps, function(samp){
       lapply(graphs, function(graph){

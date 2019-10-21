@@ -1,6 +1,6 @@
 #!/bin/bash
 
-## Genotypes each sample with Delly, SVTyper, and BayesTyper.
+## Genotypes each sample with Delly, SVTyper, BayesTyper, and Paragraph.
 
 COV=$1
 cd cov$COV
@@ -38,5 +38,9 @@ do
 	zcat bayestyper_unit_1/bayestyper.vcf.gz > $vcf.$samp.bayestyper.vcf
 	mv bayestyper_unit_1 bayestyper_unit_1.$vcf.$samp
 	mv bayestyper_cluster_data bayestyper_cluster_data.$vcf.$samp
+        ## Paragraph
+        echo -e "id\tpath\tdepth\tread length\n$samp\t$samp.bam\t$COV\t150" > samples_for_paragraph.txt
+        multigrmpy.py -m samples_for_paragraph.txt -i ../$vcf.vcf  -r ../ref.fa  -o paragraph_out_${samp}_${vcf} -t $THREADS
+        gunzip -c paragraph_out_${samp}_${vcf}/genotypes.vcf.gz > $vcf.$samp.paragraph.vcf
     done
 done
