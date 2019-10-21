@@ -2,7 +2,9 @@
 
 
 This repository contains the commands and scripts used for *Genotyping structural variants in pangenome graphs using the vg toolkit, 2019, in press*.
-They are primarily dependent on [toil-vg](https://github.com/vgteam/toil-vg), which can run most other dependencies via Docker.  There is a [WIKI here](https://github.com/vgteam/toil-vg/wiki/Genotyping-Structural-Variants) for genotyping SVs with toil-vg. [Github issues](https://github.com/vgteam/sv-genotyping-paper/issues/new) is the best place to raise questions or concerns.
+They are primarily dependent on [toil-vg](https://github.com/vgteam/toil-vg), which can run most other dependencies via Docker. 
+There is a [WIKI here](https://github.com/vgteam/toil-vg/wiki/Genotyping-Structural-Variants) for genotyping SVs with toil-vg. 
+[Github issues](https://github.com/vgteam/sv-genotyping-paper/issues/new) is the best place to raise questions or concerns.
 
 Links to necessary data are also listed for each analysis.
 
@@ -34,7 +36,6 @@ The commands for the evaluation, using [Snakemake](https://snakemake.readthedocs
 The VCFs produced produced by vg and the other methods across these datasets are available at [https://s3-us-west-2.amazonaws.com/human-pangenomics/index.html?prefix=vgsv2019/vcfs/](https://s3-us-west-2.amazonaws.com/human-pangenomics/index.html?prefix=vgsv2019/vcfs/). 
 
 ## De-novo assembly graph experiments in yeast
-
 
 The yeast experiments are written as [snakemake](https://snakemake.readthedocs.io/en/stable/) pipelines.
 Each pipeline consists of a set of rules that process a set of input files into a set of output files.
