@@ -39,9 +39,9 @@ Using the helper scripts from `../toil-scripts`.
 ./map.sh -c ${CLUSTER} ${JOBSTORE} ${OUTSTORE}/SVPOP/map-HG00733 s3://${OUTSTORE}/SVPOP/SVPOP HG00733 ${FQBASE}/HG00733/ERR895347_1.fastq.gz ${FQBASE}/HG00733/ERR895347_2.fastq.gz
 ./map.sh -c ${CLUSTER} ${JOBSTORE} ${OUTSTORE}/SVPOP/map-NA19240 s3://${OUTSTORE}/SVPOP/SVPOP NA19240 ${FQBASE}/NA19240/ERR894724_1.fastq.gz ${FQBASE}/NA19240/ERR894724_2.fastq.gz
 
-./call.sh -c ${CLUSTER} -v s3://${OUTSTORE}/SVPOP/sv-pop-explicit.vcf.gz -l s3://${OUTSTORE}/SVPOP/SVPOP_alts.gam ${JOBSTORE} ${OUTSTORE}/SVPOP/call-HG00514 s3://${OUTSTORE}/SVPOP/SVPOP.xg HG00514 s3://${OUTSTORE}/SVPOP/map-HG00514/HG00514_chr
-./call.sh -c ${CLUSTER} -v s3://${OUTSTORE}/SVPOP/sv-pop-explicit.vcf.gz -l s3://${OUTSTORE}/SVPOP/SVPOP_alts.gam ${JOBSTORE} ${OUTSTORE}/SVPOP/call-HG00733 s3://${OUTSTORE}/SVPOP/SVPOP.xg HG00733 s3://${OUTSTORE}/SVPOP/map-HG00733/HG00733_chr
-./call.sh -c ${CLUSTER} -v s3://${OUTSTORE}/SVPOP/sv-pop-explicit.vcf.gz -l s3://${OUTSTORE}/SVPOP/SVPOP_alts.gam ${JOBSTORE} ${OUTSTORE}/SVPOP/call-NA19240 s3://${OUTSTORE}/SVPOP/SVPOP.xg NA19240 s3://${OUTSTORE}/SVPOP/map-NA19240/NA19240_chr
+./call.sh -c ${CLUSTER} -v s3://${OUTSTORE}/SVPOP/sv-pop-explicit.vcf.gz ${JOBSTORE} ${OUTSTORE}/SVPOP/call-HG00514 s3://${OUTSTORE}/SVPOP/SVPOP.xg HG00514 s3://${OUTSTORE}/SVPOP/map-HG00514/HG00514_chr
+./call.sh -c ${CLUSTER} -v s3://${OUTSTORE}/SVPOP/sv-pop-explicit.vcf.gz ${JOBSTORE} ${OUTSTORE}/SVPOP/call-HG00733 s3://${OUTSTORE}/SVPOP/SVPOP.xg HG00733 s3://${OUTSTORE}/SVPOP/map-HG00733/HG00733_chr
+./call.sh -c ${CLUSTER} -v s3://${OUTSTORE}/SVPOP/sv-pop-explicit.vcf.gz ${JOBSTORE} ${OUTSTORE}/SVPOP/call-NA19240 s3://${OUTSTORE}/SVPOP/SVPOP.xg NA19240 s3://${OUTSTORE}/SVPOP/map-NA19240/NA19240_chr
 
 # vg call no longer needs toil-vg
 # for the timing benchmarks in the paper, it was run directly on the whole genome output (GAM created by catting chromosome gams together)
