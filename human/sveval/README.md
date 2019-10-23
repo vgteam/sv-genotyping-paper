@@ -85,7 +85,7 @@ python ../misc-scripts/selectSample.py -s NA19240 -v NA19240.delly.vcf.gz | bgzi
 python ../misc-scripts/selectSample.py -s HG002 -v HG002-giab-0.5.delly.vcf.gz | bgzip > vcf/giab5-delly-HG002.vcf.gz
 ```
 
-## SVTyper
+### SVTyper
 
 ```
 ## HGSVC
@@ -98,7 +98,7 @@ python ../misc-scripts/selectSample.py -s NA19240 -v NA19240.svtyper.explicit.vc
 python ../misc-scripts/selectSample.py -s HG002 -v ../svtyper/HG002/HG002.svtyper.explicit.vcf.gz | bgzip > vcf/giab5-svtyper-HG002.vcf.gz
 ```
 
-## Paragraph
+### Paragraph
 
 ```
 ## HGSVC
