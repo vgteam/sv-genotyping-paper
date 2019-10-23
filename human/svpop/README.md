@@ -71,9 +71,9 @@ Where genotyper.json contained (the VCF and BAM were downloaded from the FTP sit
 and hsvc-samples.tab contained:
 ```
 SAMPLE	SEX	DATA
-HG00514	F	svpop-bams/ERR903030_bwa_mem_sort_rg_md.bam
-HG00733	F	svpop-bams/ERR895347_bwa_mem_sort_rg_md.bam
-NA19240	F	svpop-bams/ERR894724_bwa_mem_sort_rg_md.bam
+HG00514	F	hgsvc-bams/ERR903030_bwa_mem_sort_rg_md.bam
+HG00733	F	hgsvc-bams/ERR895347_bwa_mem_sort_rg_md.bam
+NA19240	F	hgsvc-bams/ERR894724_bwa_mem_sort_rg_md.bam
 ```
 
 The BAMs were made as described [here](https://github.com/vgteam/sv-genotyping-paper/tree/master/human/hgsvc)
