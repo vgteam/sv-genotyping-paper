@@ -40,13 +40,12 @@ Using the helper scripts from `../toil-scripts`.
 
 ```
 # make the CHM-PSEUDODIPLOID graph
-./construct.sh -s -c ${CLUSTER}2 ${JOBSTORE}2 ${OUTSTORE}/CHMPD-feb12
+./construct.sh -s -c ${CLUSTER} ${JOBSTORE} ${OUTSTORE}/CHMPD
 
 # map the 30x reads and call variants
-./mapcall.sh -c ${CLUSTER}3 ${JOBSTORE}3 ${OUTSTORE}/CHMPD-feb12 s3://${OUTSTORE}/CHMPD-feb12/CHMPD PSEUDOSET PSEUDOSET-30 s3://majorsv-ucsc/gt/gam/aln_30x.gam
+./map.sh -c ${CLUSTER} ${JOBSTORE} ${OUTSTORE}/CHMPD/map-PSEUDOSET s3://${OUTSTORE}/CHMPD PSEUDOSET ${FQBASE}/aln_30x.gam
 
-# download VCF file
-rm -rf ./chmpd-vg-chmpd.vcf.gz ; aws s3 sync s3://${OUTSTORE}/CHMPD-feb12/CHMPD/call-PSEUDOSET-30/PSEUDOSET.vcf.gz ./chmpd-vg-chmpd.vcf.gz
+./call.sh -c ${CLUSTER} -v s3://${OUTSTORE}/CHMPD/pseudo_diploid.vcf.gz -s s3://${OUTSTORE}/CHMPD/CHMPD.snarls -l s3://${OUTSTORE}/CHMPD/CHMPD_alts.gam ${JOBSTORE} ${OUTSTORE}/CHMPD/call-PSEUDOSET s3://${OUTSTORE}/CHMPD/CHMPD.xg PSEUDOSET s3://${OUTSTORE}/CHMPD/map-PSEUDOSET/PSEUDOSET_chr
 ```
 
 ## SMRT-SV v2

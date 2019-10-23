@@ -26,13 +26,13 @@ Using the helper scripts from `../toil-scripts`.
 
 ```
 # construct a 0.50 graph with HG002 control
-./construct.sh  -G -c ${CLUSTER}1 ${JOBSTORE}1x ${OUTSTORE}/GIAB-0.5-FEB26
+./construct.sh  -G -c ${CLUSTER} ${JOBSTORE} ${OUTSTORE}/GIAB-0.5
 
 # map our downsampled 50X reads and call variants
-./mapcall.sh -p -E " -p -n -m 20" -C " -p" -c ${CLUSTER}1  ${JOBSTORE}1 ${OUTSTORE}/GIAB-0.5-FEB26 s3://${OUTSTORE}/GIAB-0.5-FEB26/GIAB HG002 HG002 s3://glennhickey/mike-hs37d5-hg002-nov18/bams/HG002-NA24385-50x.bam
+./map.sh -c ${CLUSTER} ${JOBSTORE} ${OUTSTORE}/GIAB-0.5/map-HG002 s3://${OUTSTORE}/GIAB-0.5/GIAB HG002 ${FQBASE}/HG002-NA24385-50x.bam
 
-# download VCF file
-rm -rf ./giab5-vg-HG002.vcf.gz ; aws s3 sync s3://${OUTSTORE}/GIAB-0.5-FEB26/GIAB/call-HG002/HG002.vcf.gz ./giab5-vg-HG002.vcf.gz
+./call.sh -c ${CLUSTER} -v s3://${OUTSTORE}/GIAB-0.5/giab-0.5.vcf.gz -s s3://${OUTSTORE}/GIAB-0.5/GIAB.snarls -l s3://${OUTSTORE}/GIAB-0.5/GIAB_alts.gam ${JOBSTORE} ${OUTSTORE}/GIAB-0.5/call-HG002 s3://${OUTSTORE}/GIAB-0.5/GIAB.xg HG002 s3://${OUTSTORE}/GIAB-0.5/map-HG002/HG002_chr
+
 ```
 
 ## Paragraph
