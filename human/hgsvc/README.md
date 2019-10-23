@@ -40,17 +40,28 @@ Using the helper scripts from `../toil-scripts`.
 
 ```
 # Construct all graphs and indexes.
-./construct.sh -c ${CLUSTER}1 ${JOBSTORE}1 ${OUTSTORE}
+./construct.sh -c ${CLUSTER} ${JOBSTORE} ${OUTSTORE}
 # Simulate a GAM and fastq from the two HG00514 haplotypes
-./simulate.sh -c ${CLUSTER}1 ${JOBSTORE}1 ${OUTSTORE}/sim s3://${OUTSTORE}/HGSVC_HG00514_haplo_thread_0.xg s3://${OUTSTORE}/HGSVC_HG00514_haplo_thread_1.xg ${TEMPLATE_FQ}
+./simulate.sh -c ${CLUSTER} ${JOBSTORE} ${OUTSTORE}/sim s3://${OUTSTORE}/HGSVC_HG00514_haplo_thread_0.xg s3://${OUTSTORE}/HGSVC_HG00514_haplo_thread_1.xg ${TEMPLATE_FQ}
 ## Mapping, Calling and Evaluation.
 ## Use -M SKIP, -C SKIP, -E SKIP to bypass mapping, calling, evaluation respectively (ex, if rerunning a step)
 # Simulation
-./mce.sh -c ${CLUSTER}1  ${JOBSTORE}1 ${OUTSTORE}/HGSVC s3://${OUTSTORE}/HGSVC/HGSVC HG00514 HG00514-sim s3://${OUTSTORE}/HGSVC/HGSVC.haps.vcf.gz ${COMPARE_REGIONS_BED} s3://${OUTSTORE}/HGSVC-chroms-dec5/sim/sim-HG00514-30x.fq.gz
+./map.sh -c ${CLUSTER}  ${JOBSTORE} ${OUTSTORE}/HGSVC/map-HG00514-sim s3://${OUTSTORE}/HGSVC HG00514 s3://${OUTSTORE}/HGSVC-chroms-dec5/sim/sim-HG00514-30x.fq.gz
+./call.sh -c ${CLUSTER} -v s3://${OUTSTORE}/HGSVC/HGSVC.haps.vcf.gz ${JOBSTORE} ${OUTSTORE}/HGSVC s3://${OUTSTORE}/HGSVC/HGSVC.xg HG00514 s3://${OUTSTORE}/HGSVC/map-HG00514-sim/HG00514_chr  ${COMPARE_REGIONS_BED} s3://${OUTSTORE}/HGSVC-chroms-dec5/sim/sim-HG00514-30x.fq.gz
+
 # Three HGSVC Samples (the reads can be found publicly by looking up the run names on EBI's ENA.  I had them mirrored in FQBASE for faster access)
-./mce.sh -c ${CLUSTER}1  ${JOBSTORE}1 ${OUTSTORE}/HGSVC s3://${OUTSTORE}/HGSVC/HGSVC HG00514 HG00514 s3://${OUTSTORE}/HGSVC/HGSVC.haps.vcf.gz ${COMPARE_REGIONS_BED} ${FQBASE}/HG00514/ERR903030_1.fastq.gz ${FQBASE}/HG00514/ERR903030_2.fastq.gz 
-./mce.sh -c ${CLUSTER}2  ${JOBSTORE}2 ${OUTSTORE}/HGSVC s3://${OUTSTORE}/HGSVC/HGSVC HG00733 HG00733 s3://${OUTSTORE}/HGSVC/HGSVC.haps.vcf.gz ${COMPARE_REGIONS_BED} ${FQBASE}/HG00733/ERR895347_1.fastq.gz ${FQBASE}/HG00733/ERR895347_2.fastq.gz 
-./mce.sh -c ${CLUSTER}3  ${JOBSTORE}3 ${OUTSTORE}/HGSVC s3://${OUTSTORE}/HGSVC/HGSVC NA19240 NA19240 s3://${OUTSTORE}/HGSVC/HGSVC.haps.vcf.gz ${COMPARE_REGIONS_BED} ${FQBASE}/NA19240/ERR894724_1.fastq.gz ${FQBASE}/NA19240/ERR894724_2.fastq.gz
+./map.sh -c ${CLUSTER} ${JOBSTORE} ${OUTSTORE}/HGSVC/map-HG00514 s3://${OUTSTORE}/HGSVC/HGSVC HG00514 ${FQBASE}/HG00514/ERR903030_1.fastq.gz ${FQBASE}/HG00514/ERR903030_2.fastq.gz 
+./map.sh -c ${CLUSTER} ${JOBSTORE} ${OUTSTORE}/HGSVC/map-HG00733 s3://${OUTSTORE}/HGSVC/HGSVC HG00733 ${FQBASE}/HG00733/ERR895347_1.fastq.gz ${FQBASE}/HG00733/ERR895347_2.fastq.gz
+./map.sh -c ${CLUSTER} ${JOBSTORE} ${OUTSTORE}/HGSVC/map-NA19240 s3://${OUTSTORE}/HGSVC/HGSVC NA19240 ${FQBASE}/NA19240/ERR894724_1.fastq.gz ${FQBASE}/NA19240/ERR894724_2.fastq.gz
+
+./call.sh -c ${CLUSTER} -v s3://${OUTSTORE}/HGSVC/HGSVC.haps.vcf.gz -s s3://${OUTSTORE}/HGSVC/HGSVC.snarls -l s3://${OUTSTORE}/HGSVC/HGSVC_alts.gam ${JOBSTORE} ${OUTSTORE}/HGSVC/call-HG00514 s3://${OUTSTORE}/HGSVC/HGSVC.xg HG00514 s3://${OUTSTORE}/HGSVC/map-HG00514/HG00514_chr
+./call.sh -c ${CLUSTER} -v s3://${OUTSTORE}/HGSVC/HGSVC.haps.vcf.gz -s s3://${OUTSTORE}/HGSVC/HGSVC.snarls -l s3://${OUTSTORE}/HGSVC/HGSVC_alts.gam ${JOBSTORE} ${OUTSTORE}/HGSVC/call-HG00733 s3://${OUTSTORE}/HGSVC/HGSVC.xg HG00733 s3://${OUTSTORE}/HGSVC/map-HG00733/HG00733_chr
+./call.sh -c ${CLUSTER} -v s3://${OUTSTORE}/HGSVC/HGSVC.haps.vcf.gz -s s3://${OUTSTORE}/HGSVC/HGSVC.snarls -l s3://${OUTSTORE}/HGSVC/HGSVC_alts.gam ${JOBSTORE} ${OUTSTORE}/HGSVC/call-NA19240 s3://${OUTSTORE}/HGSVC/HGSVC.xg NA19240 s3://${OUTSTORE}/HGSVC/map-NA19240/NA19240_chr
+
+# vg call no longer needs toil-vg
+# for the timing benchmarks in the paper, it was run directly on the whole genome output (GAM created by catting chromosome gams together)
+# vg pack -x HGSVC.xg -Q 5 -t 10 -g HG00514.gam -o HGSVC.HG00514.pack
+# vg call HGSVC.xg -k HGSVC.HG00514.pack -v HGSVC.haps.vcf.gz -t 10 -r HGSVC.snarls | bgzip > HG00514.vg.vcf.gz
 ```
 
 ## Mapping reads to GRCh38

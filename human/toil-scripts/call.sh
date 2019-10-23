@@ -12,6 +12,9 @@ CONFIG_PATH=""
 HEAD_NODE=""
 RECALL=1
 CHR_PREFIX="chr"
+VCF_OPTS=""
+SNARL_OPTS=""
+ALT_PATH_OPTS=""
 
 usage() {
     # Print usage to stderr
@@ -31,10 +34,13 @@ usage() {
 	 printf "   -f      (local) Path of config file\n"
 	 printf "   -a      Augment the graph (do not use --recall mode)\n"
 	 printf "   -p      No chr prefix in chromosome names\n"
+	 printf "   -s      Snarls index\n"
+	 printf "   -l      Alt path gam index from toil-vg construct\n"
+	 printf "   -v VCF  vcf to genotype\n"
     exit 1
 }
 
-while getopts "b:re:c:f:ap" o; do
+while getopts "b:re:c:f:apv:s:l:" o; do
     case "${o}" in
         b)
             BID=${OPTARG}
@@ -57,6 +63,15 @@ while getopts "b:re:c:f:ap" o; do
 				;;
 		  p)
 				CHR_PREFIX=""
+				;;
+		  v)
+				VCF_OPTS="--genotype_vcf ${OPTARG} --call_chunk_size 0 --pack"
+				;;
+		  s)
+				SNARL_OPTS="--snarls ${OPTARG}"
+				;;
+		  l)
+				ALT_PATH_OPTS="--alt_path_gam ${OPTARG}"
 				;;
         *)
             usage
@@ -130,7 +145,7 @@ else
 fi
 
 # run the job
-./ec2-run.sh ${HEAD_NODE_OPTS} -m 20 -n r3.8xlarge:${BID},r3.8xlarge "call aws:${REGION}:${JOBSTORE_NAME} ${XG_INDEX} ${SAMPLE} aws:${REGION}:${OUTSTORE_NAME} ${CONFIG_OPTS} ${GAM_OPTS} --chroms  $(for i in $(seq 22 -1 1; echo X; echo Y); do echo ${CHR_PREFIX}${i}; done) ${RECALL_OPTS} --logFile call.hgsvc.$(basename ${OUTSTORE_NAME}).log ${RESTART_FLAG}" | tee call.hgsvc.$(basename ${OUTSTORE_NAME}).stdout
+./ec2-run.sh ${HEAD_NODE_OPTS} -m 20 -n r3.8xlarge:${BID},r3.8xlarge "call aws:${REGION}:${JOBSTORE_NAME} ${XG_INDEX} ${SAMPLE} aws:${REGION}:${OUTSTORE_NAME} ${CONFIG_OPTS} ${GAM_OPTS} ${VCF_OPTS} ${SNARL_OPTS} ${ALT_PATH_OPTS} --chroms  $(for i in $(seq 22 -1 1; echo X; echo Y); do echo ${CHR_PREFIX}${i}; done) ${RECALL_OPTS} --logFile call.hgsvc.$(basename ${OUTSTORE_NAME}).log ${RESTART_FLAG}" | tee call.hgsvc.$(basename ${OUTSTORE_NAME}).stdout
 
 TOIL_ERROR=!$
 

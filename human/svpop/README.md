@@ -30,20 +30,22 @@ Using the helper scripts from `../toil-scripts`.
 
 ```
 # Construct the graph and index for svpop (15 sv samples) including inversions
-./construct.sh -p -i -c ${CLUSTER}2 ${JOBSTORE}2 ${OUTSTORE}/SVPOP-jan10
+./construct.sh -p -i -c ${CLUSTER} ${JOBSTORE} ${OUTSTORE}/SVPOP
 
 # Mapping and calling
 
-./mapcall.sh -c ${CLUSTER}1 ${JOBSTORE}1 ${OUTSTORE}/SVPOP-jan10 s3://${OUTSTORE}/SVPOP-jan10/SVPOP HG00514 HG00514 ${FQBASE}/HG00514/ERR903030_1.fastq.gz ${FQBASE}/HG00514/ERR903030_2.fastq.gz
+./map.sh -c ${CLUSTER} ${JOBSTORE} ${OUTSTORE}/SVPOP/map-HG00514 s3://${OUTSTORE}/SVPOP/SVPOP HG00514 ${FQBASE}/HG00514/ERR903030_1.fastq.gz ${FQBASE}/HG00514/ERR903030_2.fastq.gz 
+./map.sh -c ${CLUSTER} ${JOBSTORE} ${OUTSTORE}/SVPOP/map-HG00733 s3://${OUTSTORE}/SVPOP/SVPOP HG00733 ${FQBASE}/HG00733/ERR895347_1.fastq.gz ${FQBASE}/HG00733/ERR895347_2.fastq.gz
+./map.sh -c ${CLUSTER} ${JOBSTORE} ${OUTSTORE}/SVPOP/map-NA19240 s3://${OUTSTORE}/SVPOP/SVPOP NA19240 ${FQBASE}/NA19240/ERR894724_1.fastq.gz ${FQBASE}/NA19240/ERR894724_2.fastq.gz
 
-./mapcall.sh -c ${CLUSTER}2 ${JOBSTORE}2 ${OUTSTORE}/SVPOP-jan10 s3://${OUTSTORE}/SVPOP-jan10/SVPOP HG00733 HG00733 ${FQBASE}/HG00733/ERR895347_1.fastq.gz ${FQBASE}/HG00733/ERR895347_2.fastq.gz 
+./call.sh -c ${CLUSTER} -v s3://${OUTSTORE}/SVPOP/sv-pop-explicit.vcf.gz -s s3://${OUTSTORE}/SVPOP/SVPOP.snarls -l s3://${OUTSTORE}/SVPOP/SVPOP_alts.gam ${JOBSTORE} ${OUTSTORE}/SVPOP/call-HG00514 s3://${OUTSTORE}/SVPOP/SVPOP.xg HG00514 s3://${OUTSTORE}/SVPOP/map-HG00514/HG00514_chr
+./call.sh -c ${CLUSTER} -v s3://${OUTSTORE}/SVPOP/sv-pop-explicit.vcf.gz -s s3://${OUTSTORE}/SVPOP/SVPOP.snarls -l s3://${OUTSTORE}/SVPOP/SVPOP_alts.gam ${JOBSTORE} ${OUTSTORE}/SVPOP/call-HG00733 s3://${OUTSTORE}/SVPOP/SVPOP.xg HG00733 s3://${OUTSTORE}/SVPOP/map-HG00733/HG00733_chr
+./call.sh -c ${CLUSTER} -v s3://${OUTSTORE}/SVPOP/sv-pop-explicit.vcf.gz -s s3://${OUTSTORE}/SVPOP/SVPOP.snarls -l s3://${OUTSTORE}/SVPOP/SVPOP_alts.gam ${JOBSTORE} ${OUTSTORE}/SVPOP/call-NA19240 s3://${OUTSTORE}/SVPOP/SVPOP.xg NA19240 s3://${OUTSTORE}/SVPOP/map-NA19240/NA19240_chr
 
-./mapcall.sh -c ${CLUSTER}3 ${JOBSTORE}3 ${OUTSTORE}/SVPOP-jan10 s3://${OUTSTORE}/SVPOP-jan10/SVPOP NA19240 NA19240 ${FQBASE}/NA19240/ERR894724_1.fastq.gz ${FQBASE}/NA19240/ERR894724_2.fastq.gz
-
-# Download VCF files
-rm -rf ./svpop-vg-HG00514.vcf.gz ; aws s3 sync s3://${OUTSTORE}/SVPOP-jan10/call-HG00514/HG00514.vcf.gz ./svpop-vg-HG00514.vcf.gz
-rm -rf ./svpop-vg-HG00733.vcf.gz ; aws s3 sync s3://${OUTSTORE}/SVPOP-jan10/call-HG00733/HG00733.vcf.gz ./svpop-vg-HG00733.vcf.gz
-rm -rf ./svpop-vg-NA19240.vcf.gz ; aws s3 sync s3://${OUTSTORE}/SVPOP-jan10/call-NA19240/NA19240.vcf.gz ./svpop-vg-NA19240.vcf.gz
+# vg call no longer needs toil-vg
+# for the timing benchmarks in the paper, it was run directly on the whole genome output (GAM created by catting chromosome gams together)
+# vg pack -x SVPOP.xg -Q 5 -t 10 -g HG00514.gam -o SVPOP.HG00514.pack
+# vg call SVPOP.xg -k SVPOP.HG00514.pack -v SVPOP.haps.vcf.gz -r SVPOP.snarls -t 10 | bgzip > HG00514.vg.vcf.gz
 ```
 
 ## SMRT-SV v2
@@ -51,13 +53,13 @@ rm -rf ./svpop-vg-NA19240.vcf.gz ; aws s3 sync s3://${OUTSTORE}/SVPOP-jan10/call
 SMRT-SV was obtained from [github](https://github.com/EichlerLab/smrtsv2) using commit 43d28cbd4e76ed2a4e820ded11a80592675db6c9 (the then-current master branch).
 It was then run as described in its [README](https://github.com/EichlerLab/smrtsv2/blob/master/GENOTYPE.md), on a single server
 ```
-${SMRTSV_DIR}/smrtsv --jobs 20 genotype genotyper.json variants.vcf.gz
+${SMRTSV_DIR}/smrtsv --jobs 30 genotype genotyper.json variants.vcf.gz
 
 ```
 Where genotyper.json contained (the VCF and BAM were downloaded from the FTP site listed above (ftp.1000genomes.ebi.ac.uk))
 ```
 {
-  "sample_manifest": "hgsvc-samples.tab",
+  "sample_manifest": "svpop-samples.tab",
   "sv_reference": "hg38.fa",
   "sv_calls": "EEE_SV-Pop_1.ALL.sites.20181204.vcf.gz",
   "sv_contigs": "EEE_SV-Pop_1.ALL.sites.20181204.bam",
@@ -69,9 +71,9 @@ Where genotyper.json contained (the VCF and BAM were downloaded from the FTP sit
 and hsvc-samples.tab contained:
 ```
 SAMPLE	SEX	DATA
-HG00514	F	hgsvc-bams/ERR903030_bwa_mem_sort_rg_md.bam
-HG00733	F	hgsvc-bams/ERR895347_bwa_mem_sort_rg_md.bam
-NA19240	F	hgsvc-bams/ERR894724_bwa_mem_sort_rg_md.bam
+HG00514	F	svpop-bams/ERR903030_bwa_mem_sort_rg_md.bam
+HG00733	F	svpop-bams/ERR895347_bwa_mem_sort_rg_md.bam
+NA19240	F	svpop-bams/ERR894724_bwa_mem_sort_rg_md.bam
 ```
 
 The BAMs were made as described [here](https://github.com/vgteam/sv-genotyping-paper/tree/master/human/hgsvc)

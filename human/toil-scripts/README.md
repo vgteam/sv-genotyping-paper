@@ -3,6 +3,14 @@ The commands for each dataset are located in their dedicated folder (e.g. `../hg
 
 ## Setup
 
+toil-vg commit 8f2dbe265689db2ac8b554c3c6f1458372ac6ec3 (or newer) can be used, with its default vg docker image
+```
+virtualenv toilvenv
+source toilvenv/bin/activate
+pip install toil[aws,mesos]==3.20.0
+pip install toil-vg git+https://github.com/vgteam/toil-vg.git@1f54b04243e633640f7bae8ef2f35a90f5f75148
+```
+
 The following environment variables need to be set
 
 ```
