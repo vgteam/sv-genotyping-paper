@@ -65,7 +65,7 @@ while getopts "b:re:c:f:apv:s:l:" o; do
 				CHR_PREFIX=""
 				;;
 		  v)
-				VCF_OPTS="--genotype_vcf ${OPTARG} --call_chunk_size 0 --pack"
+				VCF_OPTS="--genotype_vcf ${OPTARG}  --pack"
 				;;
 		  s)
 				SNARL_OPTS="--snarls ${OPTARG}"
