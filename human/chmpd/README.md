@@ -43,7 +43,7 @@ Using the helper scripts from `../toil-scripts`.
 # map the 30x reads and call variants
 ./map.sh -c ${CLUSTER} ${JOBSTORE} ${OUTSTORE}/CHMPD/map-PSEUDOSET s3://${OUTSTORE}/CHMPD PSEUDOSET ${FQBASE}/aln_30x.gam
 
-./call.sh -c ${CLUSTER} -v s3://${OUTSTORE}/CHMPD/pseudo_diploid.vcf.gz -s s3://${OUTSTORE}/CHMPD/CHMPD.snarls -l s3://${OUTSTORE}/CHMPD/CHMPD_alts.gam ${JOBSTORE} ${OUTSTORE}/CHMPD/call-PSEUDOSET s3://${OUTSTORE}/CHMPD/CHMPD.xg PSEUDOSET s3://${OUTSTORE}/CHMPD/map-PSEUDOSET/PSEUDOSET_chr
+./call.sh -c ${CLUSTER} -v s3://${OUTSTORE}/CHMPD/pseudo_diploid.vcf.gz  -l s3://${OUTSTORE}/CHMPD/CHMPD_alts.gam ${JOBSTORE} ${OUTSTORE}/CHMPD/call-PSEUDOSET s3://${OUTSTORE}/CHMPD/CHMPD.xg PSEUDOSET s3://${OUTSTORE}/CHMPD/map-PSEUDOSET/PSEUDOSET_chr
 ```
 
 ## SMRT-SV v2
