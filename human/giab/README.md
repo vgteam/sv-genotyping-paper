@@ -31,7 +31,7 @@ Using the helper scripts from `../toil-scripts`.
 # map our downsampled 50X reads and call variants
 ./map.sh -c ${CLUSTER} ${JOBSTORE} ${OUTSTORE}/GIAB-0.5/map-HG002 s3://${OUTSTORE}/GIAB-0.5/GIAB HG002 ${FQBASE}/HG002-NA24385-50x.bam
 
-./call.sh -c ${CLUSTER} -v s3://${OUTSTORE}/GIAB-0.5/giab-0.5.vcf.gz -s s3://${OUTSTORE}/GIAB-0.5/GIAB.snarls -l s3://${OUTSTORE}/GIAB-0.5/GIAB_alts.gam ${JOBSTORE} ${OUTSTORE}/GIAB-0.5/call-HG002 s3://${OUTSTORE}/GIAB-0.5/GIAB.xg HG002 s3://${OUTSTORE}/GIAB-0.5/map-HG002/HG002_chr
+./call.sh -c ${CLUSTER} -v s3://${OUTSTORE}/GIAB-0.5/giab-0.5.vcf.gz -s s3://${OUTSTORE}/GIAB-0.5/GIAB.snarls  ${JOBSTORE} ${OUTSTORE}/GIAB-0.5/call-HG002 s3://${OUTSTORE}/GIAB-0.5/GIAB.xg HG002 s3://${OUTSTORE}/GIAB-0.5/map-HG002/HG002_chr
 
 ```
 
