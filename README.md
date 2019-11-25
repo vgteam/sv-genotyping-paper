@@ -10,6 +10,8 @@ Links to necessary data are also listed for each analysis.
 
 Of note the code to reproduce the figures and tables in the manuscript are available in [the manuscript's repo](https://github.com/jmonlong/manu-vgsv/tree/master/figures).
 
+This repository is distributed under the [MIT license terms](LICENSE).
+
 ## Simulation experiment
 
 The different methods were compared on simulated sequence and SVs.
