@@ -13,6 +13,9 @@ The [make-vcf.sh](make-vcf.sh) script creates a combined VCF file `HGSVC.haps.vc
 - HG00733: [ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR894/ERR894724/ERR894724_1.fastq.gz](ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR894/ERR894724/ERR894724_1.fastq.gz) [ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR894/ERR894724/ERR894724_2.fastq.gz](ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR894/ERR894724/ERR894724_2.fastq.gz)
 - NA19240: [ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR894/ERR894724/ERR894724_1.fastq.gz](ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR894/ERR894724/ERR894724_1.fastq.gz) [ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR894/ERR894724/ERR894724_2.fastq.gz](ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR894/ERR894724/ERR894724_2.fastq.gz)
 
+We simulated reads for HG00514 (see below). 
+These reads were deposited at [https://s3-us-west-2.amazonaws.com/human-pangenomics/index.html?prefix=vgsv2019/sim-HG00514-30x.fq.gz](https://s3-us-west-2.amazonaws.com/human-pangenomics/index.html?prefix=vgsv2019/sim-HG00514-30x.fq.gz).
+
 ## toil-vg
 
 ### Setup
@@ -63,6 +66,9 @@ Using the helper scripts from `../toil-scripts`.
 # vg pack -x HGSVC.xg -Q 5 -t 10 -g HG00514.gam -o HGSVC.HG00514.pack
 # vg call HGSVC.xg -k HGSVC.HG00514.pack -v HGSVC.haps.vcf.gz -t 10 -r HGSVC.snarls | bgzip > HG00514.vg.vcf.gz
 ```
+
+The reads simulated by the commands above were deposited at [https://s3-us-west-2.amazonaws.com/human-pangenomics/index.html?prefix=vgsv2019/sim-HG00514-30x.fq.gz](https://s3-us-west-2.amazonaws.com/human-pangenomics/index.html?prefix=vgsv2019/sim-HG00514-30x.fq.gz).
+
 
 ## Mapping reads to GRCh38
 

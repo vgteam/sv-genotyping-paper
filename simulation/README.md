@@ -11,6 +11,10 @@ Two types of errors are simulated:
 - **shift** the coordinates or deletion or insertions by 1-10 bp
 - **del**ete 1-10 bp from the start or end of the inserted sequence.
 
+The simulated reference sequence and reads that we used in the manuscript were deposited at 
+[`https://s3-us-west-2.amazonaws.com/human-pangenomics/index.html?prefix=vgsv2019/simulation`](https://s3-us-west-2.amazonaws.com/human-pangenomics/index.html?prefix=vgsv2019/simulation).
+
+
 ### 1. Prepare the environment
 
 - Create folders.

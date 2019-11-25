@@ -27,6 +27,20 @@ Finally, the high-sensitivity callsets of all 11 non-reference strains are merge
 
 ## 2. Download Illumina reads for the 12 yeast strains
 
+The reads mapped to the yeast graphs were downloaded from SRA: 
+[SRR4074413](https://trace.ncbi.nlm.nih.gov/Traces/sra/?run=SRR4074413),
+[SRR4074412](https://trace.ncbi.nlm.nih.gov/Traces/sra/?run=SRR4074412),
+[SRR4074411](https://trace.ncbi.nlm.nih.gov/Traces/sra/?run=SRR4074411),
+[SRR4074394](https://trace.ncbi.nlm.nih.gov/Traces/sra/?run=SRR4074394),
+[SRR4074385](https://trace.ncbi.nlm.nih.gov/Traces/sra/?run=SRR4074385),
+[SRR4074384](https://trace.ncbi.nlm.nih.gov/Traces/sra/?run=SRR4074384),
+[SRR4074383](https://trace.ncbi.nlm.nih.gov/Traces/sra/?run=SRR4074383),
+[SRR4074358](https://trace.ncbi.nlm.nih.gov/Traces/sra/?run=SRR4074358),
+[SRR4074258](https://trace.ncbi.nlm.nih.gov/Traces/sra/?run=SRR4074258),
+[SRR4074257](https://trace.ncbi.nlm.nih.gov/Traces/sra/?run=SRR4074257),
+[SRR4074256](https://trace.ncbi.nlm.nih.gov/Traces/sra/?run=SRR4074256),
+[SRR4074255](https://trace.ncbi.nlm.nih.gov/Traces/sra/?run=SRR4074255).
+
 ```
 cd yeast/illumina_reads
 snakemake
